@@ -1,8 +1,14 @@
 # WebSocket
 
-Socket.IO
+Socket.IO runs as a NestJS Gateway module inside `services/api`.
 
-Realtime events:
-- notifications
-- order_updates
-- waiter_calls
+## Foundation responsibilities
+
+- JWT authentication on handshake
+- Tenant room membership (`tenant:{tenantId}`)
+- Connection lifecycle logging
+- Redis adapter readiness for horizontal scale
+
+## Deferred
+
+Business event handlers such as `order_updates` and `waiter_calls` are not implemented in the foundation phase.

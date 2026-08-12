@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "cursor/**"]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: restaurantos
+          POSTGRES_PASSWORD: restaurantos
+          POSTGRES_DB: restaurantos
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U restaurantos -d restaurantos"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://restaurantos:restaurantos@localhost:5432/restaurantos?schema=public
+      REDIS_URL: redis://localhost:6379
+      JWT_ACCESS_SECRET: ci-access-secret-change-me-min-32-chars
+      JWT_REFRESH_SECRET: ci-refresh-secret-change-me-min-32-chars
+      JWT_ACCESS_TTL: 15m
+      JWT_REFRESH_TTL: 7d
+      APP_URL: http://localhost:3000
+      API_URL: http://localhost:4000
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3001
+      SMTP_URL: smtp://localhost:1025
+      EMAIL_FROM: RestaurantOS <noreply@restaurantos.local>
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_WS_URL: http://localhost:4000
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Generate Prisma Client
+        run: pnpm db:generate
+      - name: Validate Prisma schema
+        run: pnpm --filter @restaurantos/database exec prisma validate
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Build
+        run: pnpm build

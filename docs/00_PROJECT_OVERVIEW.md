@@ -1,20 +1,33 @@
 # Project Overview
 
 ## Goal
+
 Build a production-ready multi-tenant RestaurantOS AI for dine-in restaurants.
 
-## Build First
-- Monorepo
+## Architecture style
+
+Modular monolith. NestJS modules inside `services/api`. Do not split into microservices.
+
+## Build first
+
+- Monorepo (Turborepo + pnpm)
 - Authentication
 - RBAC
 - Tenant system
-- Design System
+- Design system
 - Database foundation
 - API foundation
+- Socket.IO gateway foundation
+- Notification service foundation
+- Docker + GitHub Actions
 
-## Do NOT Build Yet
+## Do not build yet
+
 - Menu
 - Orders
 - Kitchen
 - Waiter
 - Analytics
+- Billing / Payments product flows
+- AI features
+- Inventory, POS, Reservations, Loyalty, CRM

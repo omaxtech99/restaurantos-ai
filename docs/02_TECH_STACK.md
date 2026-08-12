@@ -1,11 +1,15 @@
 # Tech Stack
 
-Frontend: Next.js
-Backend: NestJS
-ORM: Prisma
-DB: PostgreSQL
-Cache: Redis
-Realtime: Socket.IO
-Storage: Cloudflare R2
-Payments: Razorpay
-Deployment: Docker + Coolify
+| Layer | Technology |
+|-------|------------|
+| Frontend | Next.js 15, React 19, TypeScript, Tailwind, shadcn/ui |
+| State / data | TanStack Query, Zustand, React Hook Form, Zod |
+| Backend | NestJS (modular monolith) |
+| ORM | Prisma |
+| Database | PostgreSQL |
+| Cache / sessions support | Redis |
+| Realtime | Socket.IO (API gateway module) |
+| Monorepo | Turborepo + pnpm workspaces |
+| Storage (later) | Cloudflare R2 |
+| Payments (later) | Razorpay |
+| Deployment | Docker, Docker Compose, Coolify, GitHub Actions, Cloudflare |
