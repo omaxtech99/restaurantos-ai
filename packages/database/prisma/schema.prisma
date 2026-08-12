@@ -15,6 +15,20 @@ enum SubscriptionStatus {
   expired
 }
 
+enum TableStatus {
+  available
+  occupied
+}
+
+enum OrderStatus {
+  open
+  in_kitchen
+  ready
+  served
+  paid
+  cancelled
+}
+
 model Tenant {
   id        String    @id @default(uuid()) @db.Uuid
   name      String
@@ -23,12 +37,18 @@ model Tenant {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  users         User[]
-  roles         Role[]
-  sessions      Session[]
-  subscriptions Subscription[]
-  auditLogs     AuditLog[]
-  userRoles     UserRole[]
+  users          User[]
+  roles          Role[]
+  sessions       Session[]
+  subscriptions  Subscription[]
+  auditLogs      AuditLog[]
+  userRoles      UserRole[]
+  menuCategories MenuCategory[]
+  menuItems      MenuItem[]
+  branches       Branch[]
+  tables         Table[]
+  orders         Order[]
+  orderItems     OrderItem[]
 
   @@index([deletedAt])
   @@map("tenants")
@@ -181,4 +201,121 @@ model AuditLog {
   @@index([userId, createdAt])
   @@index([action])
   @@map("audit_logs")
+}
+
+model MenuCategory {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @db.Uuid
+  name        String
+  description String?
+  position    Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  tenant Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items  MenuItem[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId, deletedAt])
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @db.Uuid
+  categoryId  String    @db.Uuid
+  name        String
+  description String?
+  priceCents  Int
+  isAvailable Boolean   @default(true)
+  position    Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  tenant     Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category   MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@index([tenantId, categoryId, deletedAt])
+  @@map("menu_items")
+}
+
+model Branch {
+  id        String    @id @default(uuid()) @db.Uuid
+  tenantId  String    @db.Uuid
+  name      String
+  address   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tables Table[]
+  orders Order[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId, deletedAt])
+  @@map("branches")
+}
+
+model Table {
+  id        String      @id @default(uuid()) @db.Uuid
+  tenantId  String      @db.Uuid
+  branchId  String      @db.Uuid
+  label     String
+  capacity  Int?
+  status    TableStatus @default(available)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  deletedAt DateTime?
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@unique([branchId, label])
+  @@index([tenantId, branchId, deletedAt])
+  @@map("tables")
+}
+
+model Order {
+  id         String      @id @default(uuid()) @db.Uuid
+  tenantId   String      @db.Uuid
+  branchId   String      @db.Uuid
+  tableId    String      @db.Uuid
+  status     OrderStatus @default(open)
+  totalCents Int         @default(0)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  tenant Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch Branch      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  table  Table       @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  items  OrderItem[]
+
+  @@index([tenantId, branchId, status])
+  @@index([tenantId, tableId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @db.Uuid
+  orderId       String   @db.Uuid
+  menuItemId    String   @db.Uuid
+  name          String
+  quantity      Int
+  unitPriceCents Int
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, orderId])
+  @@map("order_items")
 }

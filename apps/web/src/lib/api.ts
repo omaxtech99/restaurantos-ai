@@ -6,8 +6,10 @@ interface AuthState {
   user: AuthUser | null;
   accessToken: string | null;
   refreshToken: string | null;
+  hasHydrated: boolean;
   setSession: (session: AuthSessionResponse) => void;
   clearSession: () => void;
+  setHasHydrated: (value: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -16,6 +18,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       accessToken: null,
       refreshToken: null,
+      hasHydrated: false,
       setSession: (session) =>
         set({
           user: session.user,
@@ -28,9 +31,13 @@ export const useAuthStore = create<AuthState>()(
           accessToken: null,
           refreshToken: null,
         }),
+      setHasHydrated: (value) => set({ hasHydrated: value }),
     }),
     {
       name: 'restaurantos-auth',
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     },
   ),
 );

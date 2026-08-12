@@ -19,6 +19,41 @@ export class RbacService {
         create: entry,
       });
     }
+
+    await this.syncOwnerRolePermissions();
+  }
+
+  /**
+   * New permission codes only reach a tenant's owner role at signup time
+   * (ensureOwnerRole). This backfills every existing owner role so
+   * already-created tenants pick up newly added permissions too, without
+   * needing a fresh signup.
+   */
+  private async syncOwnerRolePermissions(): Promise<void> {
+    const [ownerRoles, permissions] = await Promise.all([
+      this.prismaService.prisma.role.findMany({
+        where: { isSystem: true, name: SYSTEM_ROLES.OWNER },
+      }),
+      this.prismaService.prisma.permission.findMany(),
+    ]);
+
+    for (const role of ownerRoles) {
+      for (const permission of permissions) {
+        await this.prismaService.prisma.rolePermission.upsert({
+          where: {
+            roleId_permissionId: {
+              roleId: role.id,
+              permissionId: permission.id,
+            },
+          },
+          update: {},
+          create: {
+            roleId: role.id,
+            permissionId: permission.id,
+          },
+        });
+      }
+    }
   }
 
   async ensureOwnerRole(tenantId: string, userId: string): Promise<void> {

@@ -10,6 +10,9 @@ import { AuditModule } from './modules/audit/audit.module';
 import { GatewayModule } from './modules/gateway/gateway.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { LoggerModule } from './modules/logger/logger.module';
+import { MenuModule } from './modules/menu/menu.module';
+import { BranchModule } from './modules/branch/branch.module';
+import { OrderModule } from './modules/order/order.module';
 
 @Module({
   imports: [
@@ -24,6 +27,9 @@ import { LoggerModule } from './modules/logger/logger.module';
     HealthModule,
     GatewayModule,
     NotificationModule,
+    MenuModule,
+    BranchModule,
+    OrderModule,
   ],
 })
 export class AppModule {}
