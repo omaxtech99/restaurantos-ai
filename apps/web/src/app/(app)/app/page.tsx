@@ -32,6 +32,9 @@ export default function AppShellPage() {
         </div>
         <div className="flex items-center gap-3">
           <ThemeToggle />
+          <Button variant="outline" asChild>
+            <Link href="/menu">Menu</Link>
+          </Button>
           <Button
             variant="outline"
             onClick={async () => {

@@ -120,3 +120,49 @@ export interface ResetPasswordRequest {
 export interface VerifyEmailRequest {
   token: string;
 }
+
+export interface MenuCategory {
+  id: Uuid;
+  tenantId: Uuid;
+  name: string;
+  description: string | null;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MenuItem {
+  id: Uuid;
+  tenantId: Uuid;
+  categoryId: Uuid;
+  name: string;
+  description: string | null;
+  priceCents: number;
+  isAvailable: boolean;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MenuCategoryWithItems extends MenuCategory {
+  items: MenuItem[];
+}
+
+export interface CreateMenuCategoryRequest {
+  name: string;
+  description?: string;
+  position?: number;
+}
+
+export type UpdateMenuCategoryRequest = Partial<CreateMenuCategoryRequest>;
+
+export interface CreateMenuItemRequest {
+  categoryId: Uuid;
+  name: string;
+  description?: string;
+  priceCents: number;
+  isAvailable?: boolean;
+  position?: number;
+}
+
+export type UpdateMenuItemRequest = Partial<CreateMenuItemRequest>;

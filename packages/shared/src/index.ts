@@ -81,6 +81,25 @@ export const verifyEmailSchema = z.object({
   token: z.string().min(1),
 });
 
+export const createMenuCategorySchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  description: z.string().trim().max(500).optional(),
+  position: z.number().int().min(0).max(100_000).optional(),
+});
+
+export const updateMenuCategorySchema = createMenuCategorySchema.partial();
+
+export const createMenuItemSchema = z.object({
+  categoryId: z.string().uuid(),
+  name: z.string().trim().min(1).max(120),
+  description: z.string().trim().max(500).optional(),
+  priceCents: z.number().int().min(0).max(100_000_00),
+  isAvailable: z.boolean().optional(),
+  position: z.number().int().min(0).max(100_000).optional(),
+});
+
+export const updateMenuItemSchema = createMenuItemSchema.partial();
+
 export const PERMISSIONS = {
   TENANT_READ: 'tenant:read',
   TENANT_UPDATE: 'tenant:update',
@@ -88,6 +107,8 @@ export const PERMISSIONS = {
   USER_MANAGE: 'user:manage',
   ROLE_MANAGE: 'role:manage',
   AUDIT_READ: 'audit:read',
+  MENU_READ: 'menu:read',
+  MENU_MANAGE: 'menu:manage',
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

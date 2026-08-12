@@ -23,12 +23,14 @@ model Tenant {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  users         User[]
-  roles         Role[]
-  sessions      Session[]
-  subscriptions Subscription[]
-  auditLogs     AuditLog[]
-  userRoles     UserRole[]
+  users          User[]
+  roles          Role[]
+  sessions       Session[]
+  subscriptions  Subscription[]
+  auditLogs      AuditLog[]
+  userRoles      UserRole[]
+  menuCategories MenuCategory[]
+  menuItems      MenuItem[]
 
   @@index([deletedAt])
   @@map("tenants")
@@ -181,4 +183,42 @@ model AuditLog {
   @@index([userId, createdAt])
   @@index([action])
   @@map("audit_logs")
+}
+
+model MenuCategory {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @db.Uuid
+  name        String
+  description String?
+  position    Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  tenant Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items  MenuItem[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId, deletedAt])
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @db.Uuid
+  categoryId  String    @db.Uuid
+  name        String
+  description String?
+  priceCents  Int
+  isAvailable Boolean   @default(true)
+  position    Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  tenant   Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, categoryId, deletedAt])
+  @@map("menu_items")
 }

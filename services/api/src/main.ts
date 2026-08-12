@@ -5,6 +5,7 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AppConfigService } from './modules/config/app-config.service';
+import { RbacService } from './modules/rbac/application/rbac.service';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -18,6 +19,8 @@ async function bootstrap(): Promise<void> {
   });
 
   const config = app.get(AppConfigService);
+
+  await app.get(RbacService).seedPermissions();
 
   app.setGlobalPrefix('api');
   app.enableVersioning({

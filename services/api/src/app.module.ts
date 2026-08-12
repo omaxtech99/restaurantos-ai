@@ -10,6 +10,7 @@ import { AuditModule } from './modules/audit/audit.module';
 import { GatewayModule } from './modules/gateway/gateway.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { LoggerModule } from './modules/logger/logger.module';
+import { MenuModule } from './modules/menu/menu.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { LoggerModule } from './modules/logger/logger.module';
     HealthModule,
     GatewayModule,
     NotificationModule,
+    MenuModule,
   ],
 })
 export class AppModule {}
