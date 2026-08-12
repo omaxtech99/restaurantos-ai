@@ -72,6 +72,10 @@ export class AuthService {
 
     await this.rbacService.ensureOwnerRole(tenant.id, user.id);
 
+    await this.prismaService.prisma.branch.create({
+      data: { tenantId: tenant.id, name: 'Main' },
+    });
+
     await this.notificationService.enqueueEmail({
       to: user.email,
       subject: 'Verify your RestaurantOS email',

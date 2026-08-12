@@ -56,13 +56,14 @@ function formatPrice(cents: number): string {
 export default function MenuPage() {
   const router = useRouter();
   const accessToken = useAuthStore((state) => state.accessToken);
+  const hasHydrated = useAuthStore((state) => state.hasHydrated);
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!accessToken) {
+    if (hasHydrated && !accessToken) {
       router.replace('/login');
     }
-  }, [accessToken, router]);
+  }, [hasHydrated, accessToken, router]);
 
   const menuQuery = useQuery({
     queryKey: ['menu'],
@@ -140,7 +141,7 @@ export default function MenuPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['menu'] }),
   });
 
-  if (!accessToken) {
+  if (!hasHydrated || !accessToken) {
     return null;
   }
 

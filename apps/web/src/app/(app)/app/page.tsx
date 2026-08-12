@@ -11,15 +11,16 @@ export default function AppShellPage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const accessToken = useAuthStore((state) => state.accessToken);
+  const hasHydrated = useAuthStore((state) => state.hasHydrated);
   const clearSession = useAuthStore((state) => state.clearSession);
 
   useEffect(() => {
-    if (!accessToken) {
+    if (hasHydrated && !accessToken) {
       router.replace('/login');
     }
-  }, [accessToken, router]);
+  }, [hasHydrated, accessToken, router]);
 
-  if (!accessToken || !user) {
+  if (!hasHydrated || !accessToken || !user) {
     return null;
   }
 
@@ -34,6 +35,12 @@ export default function AppShellPage() {
           <ThemeToggle />
           <Button variant="outline" asChild>
             <Link href="/menu">Menu</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/branches">Branches</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/orders">Orders</Link>
           </Button>
           <Button
             variant="outline"

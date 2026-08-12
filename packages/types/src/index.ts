@@ -166,3 +166,93 @@ export interface CreateMenuItemRequest {
 }
 
 export type UpdateMenuItemRequest = Partial<CreateMenuItemRequest>;
+
+export type TableStatus = 'available' | 'occupied';
+export type OrderStatus = 'open' | 'in_kitchen' | 'ready' | 'served' | 'paid' | 'cancelled';
+
+export interface Branch {
+  id: Uuid;
+  tenantId: Uuid;
+  name: string;
+  address: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Table {
+  id: Uuid;
+  tenantId: Uuid;
+  branchId: Uuid;
+  label: string;
+  capacity: number | null;
+  status: TableStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BranchWithTables extends Branch {
+  tables: Table[];
+}
+
+export interface CreateBranchRequest {
+  name: string;
+  address?: string;
+}
+
+export type UpdateBranchRequest = Partial<CreateBranchRequest>;
+
+export interface CreateTableRequest {
+  label: string;
+  capacity?: number;
+}
+
+export type UpdateTableRequest = Partial<CreateTableRequest> & {
+  status?: TableStatus;
+};
+
+export interface OrderItem {
+  id: Uuid;
+  tenantId: Uuid;
+  orderId: Uuid;
+  menuItemId: Uuid;
+  name: string;
+  quantity: number;
+  unitPriceCents: number;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Order {
+  id: Uuid;
+  tenantId: Uuid;
+  branchId: Uuid;
+  tableId: Uuid;
+  status: OrderStatus;
+  totalCents: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrderWithItems extends Order {
+  items: OrderItem[];
+}
+
+export interface OrderItemInput {
+  menuItemId: Uuid;
+  quantity: number;
+  notes?: string;
+}
+
+export interface CreateOrderRequest {
+  tableId: Uuid;
+  items: OrderItemInput[];
+}
+
+export interface AddOrderItemsRequest {
+  items: OrderItemInput[];
+}
+
+export interface UpdateOrderStatusRequest {
+  status: OrderStatus;
+}

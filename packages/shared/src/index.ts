@@ -100,6 +100,65 @@ export const createMenuItemSchema = z.object({
 
 export const updateMenuItemSchema = createMenuItemSchema.partial();
 
+export const createBranchSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  address: z.string().trim().max(300).optional(),
+});
+
+export const updateBranchSchema = createBranchSchema.partial();
+
+export const createTableSchema = z.object({
+  label: z.string().trim().min(1).max(60),
+  capacity: z.number().int().min(1).max(100).optional(),
+});
+
+export const updateTableSchema = createTableSchema.partial();
+
+export const ORDER_STATUSES = [
+  'open',
+  'in_kitchen',
+  'ready',
+  'served',
+  'paid',
+  'cancelled',
+] as const;
+export type OrderStatusValue = (typeof ORDER_STATUSES)[number];
+
+export const orderItemInputSchema = z.object({
+  menuItemId: z.string().uuid(),
+  quantity: z.number().int().min(1).max(99),
+  notes: z.string().trim().max(300).optional(),
+});
+
+export const createOrderSchema = z.object({
+  tableId: z.string().uuid(),
+  items: z.array(orderItemInputSchema).min(1),
+});
+
+export const addOrderItemsSchema = z.object({
+  items: z.array(orderItemInputSchema).min(1),
+});
+
+export const updateOrderStatusSchema = z.object({
+  status: z.enum(ORDER_STATUSES),
+});
+
+export const ORDER_STATUS_TRANSITIONS: Record<OrderStatusValue, OrderStatusValue[]> = {
+  open: ['in_kitchen', 'cancelled'],
+  in_kitchen: ['ready', 'cancelled'],
+  ready: ['served', 'cancelled'],
+  served: ['paid', 'cancelled'],
+  paid: [],
+  cancelled: [],
+};
+
+export function isValidOrderStatusTransition(
+  from: OrderStatusValue,
+  to: OrderStatusValue,
+): boolean {
+  return ORDER_STATUS_TRANSITIONS[from].includes(to);
+}
+
 export const PERMISSIONS = {
   TENANT_READ: 'tenant:read',
   TENANT_UPDATE: 'tenant:update',
@@ -109,6 +168,10 @@ export const PERMISSIONS = {
   AUDIT_READ: 'audit:read',
   MENU_READ: 'menu:read',
   MENU_MANAGE: 'menu:manage',
+  BRANCH_READ: 'branch:read',
+  BRANCH_MANAGE: 'branch:manage',
+  ORDER_READ: 'order:read',
+  ORDER_MANAGE: 'order:manage',
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
