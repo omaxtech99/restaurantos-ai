@@ -1,0 +1,18 @@
+{
+  "name": "restaurantos-ai",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.33.3",
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "db:generate": "pnpm --filter @restaurantos/database generate",
+    "db:push": "pnpm --filter @restaurantos/database push",
+    "db:seed": "pnpm --filter @restaurantos/database seed"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.4",
+    "typescript": "^5.8.3"
+  }
+}

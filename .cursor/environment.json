@@ -1,0 +1,32 @@
+{
+  "name": "RestaurantOS AI",
+  "user": "ubuntu",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "install": "./scripts/cloud-agent-install.sh",
+  "start": "./scripts/cloud-agent-start.sh",
+  "terminals": [
+    {
+      "name": "api",
+      "command": "pnpm --filter @restaurantos/api dev",
+      "description": "NestJS-compatible API service on port 4000"
+    },
+    {
+      "name": "landing",
+      "command": "pnpm --filter @restaurantos/landing dev",
+      "description": "Next.js landing app on port 3000"
+    }
+  ],
+  "ports": [
+    {
+      "name": "web",
+      "port": 3000
+    },
+    {
+      "name": "api",
+      "port": 4000
+    }
+  ]
+}
