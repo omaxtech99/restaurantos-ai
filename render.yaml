@@ -36,6 +36,10 @@ services:
         sync: false
       - key: EMAIL_FROM
         sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
 
   - type: web
     name: restaurantos-notification

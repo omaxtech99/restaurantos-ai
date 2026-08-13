@@ -196,9 +196,31 @@ work, not a gap in what shipped.
    setting those two env vars (plus `WHATSAPP_TEMPLATE_NAME`, defaults to
    Meta's sample `hello_world` template) on the notification service's
    deploy — no code change needed.
+9. **Online payment + tip** (`modules/payment`) — once an order is
+   `served` (same point the waiter's cash "Mark paid" already appears),
+   the customer can pay online from their own device instead, with an
+   optional 0/5/10/15% tip. Two public endpoints:
+   `POST /public/orders/:orderId/create-payment` (409s if the order isn't
+   served yet) creates a Razorpay order for total+tip;
+   `POST /public/orders/:orderId/verify-payment` independently recomputes
+   the HMAC-SHA256 signature server-side (`createHmac('sha256',
+   keySecret).update(razorpayOrderId + '|' + razorpayPaymentId)`) before
+   trusting a payment succeeded — **never trust the frontend's claim
+   alone**, a tampered client could otherwise mark any order paid for
+   free. On success it calls the existing `OrderService.updateStatus`,
+   so table release and the waitlist auto-notify hook fire identically
+   whether payment was online or cash. `Order.paymentMethod` is now set
+   on the cash path too (`updateWaiterStatus` tags it `'cash'` right
+   before the status flip), so the field means something either way.
+   Same no-credentials posture as WhatsApp: without
+   `RAZORPAY_KEY_ID`/`RAZORPAY_KEY_SECRET` configured, create-payment
+   returns `{configured: false}` instead of throwing, and the customer
+   sees "ask your waiter for the bill" instead of a broken button —
+   verified this degrades cleanly with a full Playwright run, plus curl
+   checks of both the "not served yet" 409 and a garbage-signature 400.
 
 Not yet built: everything else in `docs/12_PRODUCT_SCOPE.md`'s build order
-— simple non-GST billing + Razorpay is next.
+— rich dish content is next.
 
 ## Deployment
 

@@ -95,11 +95,12 @@ Status legend: ✅ done · 🔜 next · ⏳ planned
 ### Pillar 2 — Billing & Payments ⏳
 - GST-compliant billing/invoicing (India tax compliance — not optional)
 - Multi-mode payment collection (cash / card / UPI), split bills
-- Razorpay integration; order auto-flips to "paid" on successful in-app
-  payment
-- **Tip option** at online-payment time — the customer, paying from their
-  own device, can add a tip before confirming payment; not available on
-  the cash path (there's no online payment step to attach it to there)
+- ✅ Razorpay integration; order auto-flips to "paid" on successful in-app
+  payment, once served
+- ✅ **Tip option** at online-payment time — the customer, paying from
+  their own device, can add a tip before confirming payment; not
+  available on the cash path (there's no online payment step to attach
+  it to there)
 - Cash payments: **only the waiter** can manually mark an order "paid" —
   there's no digital signal to trigger it automatically
 - Day-end / night-audit reconciliation reports
@@ -206,7 +207,10 @@ infrastructure the previous one established.
    when a table actually frees up (not a ~15-min prediction — see
    `CLAUDE.md` for why); WhatsApp send itself is wired but degrades to a
    log line until real Meta Cloud API credentials are supplied
-8. Simple non-GST billing + Razorpay (GST deferred — see §4 non-goals)
+8. ✅ Simple non-GST billing + Razorpay, with tip — pay online once
+   served, or cash via waiter as before; GST itself deferred, see §4
+   non-goals; Razorpay send is wired but degrades gracefully until real
+   keys are supplied, same posture as WhatsApp
 9. Rich dish content (AI auto-fill + R2 media + taste/flavor profile +
    nutrition + dietary filters)
 10. Feedback/ratings (verified, WhatsApp-triggered)
