@@ -160,6 +160,17 @@ work, not a gap in what shipped.
    on order creation, the generic `/status` endpoint, and the kitchen
    endpoint. `User.email`/`passwordHash` are now nullable (PIN accounts
    have neither); `User.pinHash` is new.
+7. **Special instructions + "call waiter" ping** — per-item free-text notes
+   on the customer ordering page (no schema change, reuses `OrderItem.notes`
+   which already existed and was already rendered on staff screens). Plus a
+   "Call waiter" button hitting `POST /public/tables/:tableId/call-waiter`,
+   which emits the `waiter_calls` Socket.IO event the gateway had reserved
+   since the foundation phase; rate-limited to once per 5 minutes per table
+   via a Redis `SET ... NX EX 300` key (enforced server-side, not just a
+   disabled button) — see `PublicService.callWaiter`. Tip-at-checkout was
+   requested alongside this but needs the Razorpay/online-payment
+   integration first; it's captured in `docs/12_PRODUCT_SCOPE.md` Pillar 2
+   for that phase, not built yet.
 
 Not yet built: everything else in `docs/12_PRODUCT_SCOPE.md`'s build order
 — Waitlist + WhatsApp is next.
