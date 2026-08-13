@@ -42,6 +42,12 @@ export default function AppShellPage() {
           <Button variant="outline" asChild>
             <Link href="/orders">Orders</Link>
           </Button>
+          <Button variant="outline" asChild>
+            <Link href="/kitchen">Kitchen</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/waiter">Waiter</Link>
+          </Button>
           <Button
             variant="outline"
             onClick={async () => {

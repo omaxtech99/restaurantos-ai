@@ -6,6 +6,7 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import type { OrderWithItems } from '@restaurantos/types';
 import { TokenService } from '../../auth/application/token.service';
 import { AppLogger } from '../../logger/app-logger.service';
 
@@ -59,5 +60,9 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleDisconnect(@ConnectedSocket() client: Socket): void {
     const user = client.data.user as { sub?: string } | undefined;
     this.logger.log(`Socket disconnected user=${user?.sub ?? 'unknown'}`, 'EventsGateway');
+  }
+
+  emitOrderUpdate(tenantId: string, order: OrderWithItems): void {
+    this.server.to(`tenant:${tenantId}`).emit('order_updates', order);
   }
 }

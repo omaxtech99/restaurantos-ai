@@ -32,6 +32,7 @@ import {
 } from '@restaurantos/ui';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { apiRequest, useAuthStore } from '@/lib/api';
+import { useOrderUpdates } from '@/lib/use-order-updates';
 
 const STATUS_LABEL: Record<OrderStatusValue, string> = {
   open: 'Open',
@@ -209,7 +210,11 @@ export default function OrdersPage() {
     queryKey: ['orders'],
     queryFn: () => apiRequest<OrderWithItems[]>('/orders', { auth: true }),
     enabled: Boolean(accessToken),
-    refetchInterval: 10_000,
+    refetchInterval: 30_000,
+  });
+
+  useOrderUpdates(accessToken, () => {
+    queryClient.invalidateQueries({ queryKey: ['orders'] });
   });
 
   const tables = useMemo(

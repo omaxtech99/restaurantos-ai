@@ -7,6 +7,7 @@ import type {
   OrderWithItems,
 } from '@restaurantos/types';
 import { PrismaService } from '../../database/prisma.service';
+import { EventsGateway } from '../../gateway/presentation/events.gateway';
 
 interface OrderItemRecord {
   id: string;
@@ -70,7 +71,10 @@ interface ListOrdersFilters {
 
 @Injectable()
 export class OrderService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly eventsGateway: EventsGateway,
+  ) {}
 
   async listOrders(tenantId: string, filters: ListOrdersFilters = {}): Promise<OrderWithItems[]> {
     const orders = await this.prismaService.prisma.order.findMany({
@@ -166,7 +170,9 @@ export class OrderService {
       return updated;
     });
 
-    return toOrderWithItems(order);
+    const result = toOrderWithItems(order);
+    this.eventsGateway.emitOrderUpdate(tenantId, result);
+    return result;
   }
 
   async addItems(
@@ -213,7 +219,9 @@ export class OrderService {
       });
     });
 
-    return toOrderWithItems(updated);
+    const result = toOrderWithItems(updated);
+    this.eventsGateway.emitOrderUpdate(tenantId, result);
+    return result;
   }
 
   async updateStatus(
@@ -244,7 +252,9 @@ export class OrderService {
       return result;
     });
 
-    return toOrderWithItems(updated);
+    const result = toOrderWithItems(updated);
+    this.eventsGateway.emitOrderUpdate(tenantId, result);
+    return result;
   }
 
   private async loadOrderableMenuItems(
