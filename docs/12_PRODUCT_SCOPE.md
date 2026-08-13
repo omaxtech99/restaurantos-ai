@@ -202,9 +202,10 @@ infrastructure the previous one established.
    `/staff`; `/switch-user` swaps the shared device's session to a staff
    member's own token; the narrow permissions (`order:serve`,
    `order:kitchen`) are real and enforced server-side. See `CLAUDE.md`.
-7. 🔜 **Waitlist + WhatsApp** — highest real-world priority for reception-area
-   rush (Mumbai walk-ins); builds on existing Branch/Table data; Meta
-   WhatsApp Cloud API already tested by the founder, not a blocker
+7. ✅ Waitlist + WhatsApp — reception adds a walk-in, gets notified live
+   when a table actually frees up (not a ~15-min prediction — see
+   `CLAUDE.md` for why); WhatsApp send itself is wired but degrades to a
+   log line until real Meta Cloud API credentials are supplied
 8. Simple non-GST billing + Razorpay (GST deferred — see §4 non-goals)
 9. Rich dish content (AI auto-fill + R2 media + taste/flavor profile +
    nutrition + dietary filters)

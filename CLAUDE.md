@@ -171,9 +171,34 @@ work, not a gap in what shipped.
    requested alongside this but needs the Razorpay/online-payment
    integration first; it's captured in `docs/12_PRODUCT_SCOPE.md` Pillar 2
    for that phase, not built yet.
+8. **Waitlist + WhatsApp** (`modules/waitlist`, `/waitlist`) — reception
+   adds a walk-in (name, phone, party size) to a branch's queue; a
+   WhatsApp message goes out the moment a table **actually frees up**, not
+   ~15 minutes ahead of time as originally described. That predictive
+   version needs real historical table-turnover data (see "Table
+   Intelligence" in `docs/13_FUTURE_VISION.md`) that doesn't exist yet —
+   notifying on release is the reliable version buildable today, and was
+   confirmed as the right call before building it. `OrderService.updateStatus`
+   calls `WaitlistService.notifyNextInQueue(tenantId, order.branchId)`
+   right after flipping a table back to `available` (i.e. on `paid` or
+   `cancelled`); it finds the longest-waiting party and fires their
+   notification. WhatsApp sending itself follows the exact same
+   Redis-queue-plus-worker pattern the email notifications already used —
+   `NotificationService.enqueueWhatsApp` (services/api) pushes a job,
+   `WhatsAppWorkerService` + `WhatsAppTransportService`
+   (services/notification, a separately-deployed worker) pick it up and
+   call the Meta Cloud API. **No real WhatsApp credentials were available
+   when this was built** — `WhatsAppTransportService.send()` checks
+   `WHATSAPP_ACCESS_TOKEN`/`WHATSAPP_PHONE_NUMBER_ID` and, if either is
+   missing, logs exactly what it would have sent (recipient, template,
+   payload) instead of throwing, verified by triggering the real flow
+   end-to-end and reading that log line. Wiring in real sending is just
+   setting those two env vars (plus `WHATSAPP_TEMPLATE_NAME`, defaults to
+   Meta's sample `hello_world` template) on the notification service's
+   deploy — no code change needed.
 
 Not yet built: everything else in `docs/12_PRODUCT_SCOPE.md`'s build order
-— Waitlist + WhatsApp is next.
+— simple non-GST billing + Razorpay is next.
 
 ## Deployment
 
