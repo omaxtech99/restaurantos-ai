@@ -1,6 +1,12 @@
 # RestaurantOS AI
 
-Production-grade multi-tenant SaaS foundation for dine-in restaurants.
+A multi-tenant restaurant growth platform for dine-in restaurants — menu,
+tables, orders, and zero-install QR customer ordering today, with billing,
+kitchen/waiter live screens, WhatsApp waitlist, and AI-driven owner insights
+on the roadmap. See [`docs/12_PRODUCT_SCOPE.md`](./docs/12_PRODUCT_SCOPE.md)
+for the product vision and build order, and
+[`CLAUDE.md`](./CLAUDE.md) for how it's built, deployed, and the operational
+gotchas already learned the hard way.
 
 ## Stack
 
@@ -28,8 +34,18 @@ docker compose up
 
 ## Documentation
 
-See [`docs/`](./docs) for architecture and foundation standards.
+- [`CLAUDE.md`](./CLAUDE.md) — engineering log: architecture, what's built,
+  deployment, verification process, and bugs already fixed (read this
+  first if you're picking up the project)
+- [`docs/12_PRODUCT_SCOPE.md`](./docs/12_PRODUCT_SCOPE.md) — product vision
+  and near-term build order
+- [`docs/13_FUTURE_VISION.md`](./docs/13_FUTURE_VISION.md) — long-term AI /
+  growth feature backlog
+- [`docs/`](./docs) — foundation-level architecture and standards docs
 
 ## Scope
 
-This repository currently contains the **foundation only** (auth, tenant, RBAC, shared packages, infra). Restaurant business modules are intentionally not included.
+Foundation (auth, tenant, RBAC) plus the first restaurant business modules
+are live: menu management, branches/tables, staff order management, and
+zero-install QR-code customer self-ordering. See `docs/12_PRODUCT_SCOPE.md`
+§6 for what's built vs. what's next.

@@ -152,6 +152,11 @@ Status legend: ✅ done · 🔜 next · ⏳ planned
 - AI customer recommendations ("for you" style, based on ratings/preferences)
 - AI-suggested combos/upsells ("customers who ordered X also ordered Y")
 - WhatsApp re-engagement campaigns ("haven't seen you in 30 days")
+- This pillar is the near-term slice of a much larger AI/growth surface —
+  see [`13_FUTURE_VISION.md`](./13_FUTURE_VISION.md) for the full backlog
+  (AI Restaurant Manager, dynamic pricing, predictive inventory, complaint
+  detection, revenue leak detection, AI business coach, and more) that this
+  pillar will keep expanding into over time.
 
 ### Pillar 7 — Scale & Reliability ⏳
 - Multi-branch consolidated reporting for owners with several locations
@@ -172,20 +177,36 @@ infrastructure the previous one established.
 1. ✅ Foundation (auth, tenant, RBAC)
 2. ✅ Menu
 3. ✅ Branches, Tables, Orders (staff-side)
-4. 🔜 **Waitlist + WhatsApp** — highest real-world priority (Mumbai rush
-   hours); builds directly on existing Branch/Table data
-5. Rich dish content (AI auto-fill + R2 media + dietary filters)
-6. Feedback/ratings (verified, WhatsApp-triggered)
-7. Discovery (cross-restaurant, depends on 5 and 6)
-8. Reservations (shares patterns with Waitlist)
-9. Customer self-ordering (QR → order → live status)
-10. Billing & Payments (GST, Razorpay, cash/paid permission split)
-11. Inventory & Kitchen Ops (KOT, stock tracking)
-12. Staff & Waiter (narrow permissions, PIN login, shifts)
-13. AI insights & growth (owner insights, recommendations, upsells,
-    campaigns)
-14. Scale & reliability (multi-branch reporting, offline resilience,
+4. ✅ Customer self-ordering (QR → menu → order → live status) — re-prioritized
+   ahead of Waitlist so there was a demoable, sellable customer-facing flow
+   as early as possible; see `CLAUDE.md` for how it was built and verified
+5. 🔜 **Kitchen + Waiter live screens** — Socket.IO `order_updates` wired to
+   real events so kitchen/waiter see new orders instantly instead of
+   polling/refreshing; waiter screen is deliberately narrow (mark served,
+   mark cash paid — no order-taking, by design)
+6. **Waitlist + WhatsApp** — highest real-world priority for reception-area
+   rush (Mumbai walk-ins); builds on existing Branch/Table data; Meta
+   WhatsApp Cloud API already tested by the founder, not a blocker
+7. Simple non-GST billing + Razorpay (GST deferred — see §4 non-goals)
+8. Rich dish content (AI auto-fill + R2 media + taste/flavor profile +
+   nutrition + dietary filters)
+9. Feedback/ratings (verified, WhatsApp-triggered)
+10. Discovery (cross-restaurant, depends on 8 and 9)
+11. Reservations (shares patterns with Waitlist)
+12. Full GST-compliant Billing & Payments
+13. Inventory & Kitchen Ops (KOT, recipe-based stock tracking)
+14. Staff & Waiter granular permissions (PIN login, shifts, roles beyond the
+    narrow default)
+15. AI insights & growth (owner insights, recommendations, upsells,
+    campaigns — first slice of the much larger backlog in
+    [`13_FUTURE_VISION.md`](./13_FUTURE_VISION.md))
+16. Scale & reliability (multi-branch reporting, offline resilience,
     multi-language, table turnover analytics)
+
+This order reflects the actual re-prioritization agreed mid-project (ship a
+demoable customer-facing flow before GST/full billing), not the original
+draft order. Update this list as priorities shift — it, not chat history,
+is the source of truth for "what's next."
 
 Each slice is scoped, built, and verified end-to-end (real database, real
 browser walkthrough) before the next one starts — the same process used for
