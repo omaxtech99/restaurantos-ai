@@ -43,7 +43,8 @@ export interface AuthTokens {
 
 export interface AuthUser {
   id: Uuid;
-  email: string;
+  /** null for PIN-login staff accounts (waiter/kitchen), which have no email. */
+  email: string | null;
   firstName: string;
   lastName: string;
   tenantId: Uuid;
@@ -59,7 +60,7 @@ export interface AuthSessionResponse {
 
 export interface JwtAccessPayload {
   sub: Uuid;
-  email: string;
+  email: string | null;
   tenantId: Uuid;
   roles: string[];
   permissions: string[];
@@ -192,6 +193,19 @@ export interface Table {
 
 export interface BranchWithTables extends Branch {
   tables: Table[];
+}
+
+export interface StaffMember {
+  id: Uuid;
+  firstName: string;
+  lastName: string;
+  roles: string[];
+  createdAt: string;
+}
+
+export interface PinLoginRequest {
+  userId: Uuid;
+  pin: string;
 }
 
 export interface CreateBranchRequest {

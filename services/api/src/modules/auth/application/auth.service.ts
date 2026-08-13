@@ -8,6 +8,7 @@ import type {
   AuthUser,
   ForgotPasswordRequest,
   LoginRequest,
+  PinLoginRequest,
   RefreshRequest,
   ResetPasswordRequest,
   SignupRequest,
@@ -77,7 +78,7 @@ export class AuthService {
     });
 
     await this.notificationService.enqueueEmail({
-      to: user.email,
+      to: input.email.toLowerCase(),
       subject: 'Verify your RestaurantOS email',
       template: 'email-verification',
       payload: {
@@ -108,7 +109,7 @@ export class AuthService {
   async login(input: LoginRequest, meta: RequestMeta = {}): Promise<AuthSessionResponse> {
     const user = await this.findUserForAuth(input.email, input.tenantSlug);
 
-    if (!user) {
+    if (!user || !user.passwordHash) {
       await this.auditService.write({
         action: 'auth.failed_login',
         metadata: { email: input.email.toLowerCase() },
@@ -139,6 +140,56 @@ export class AuthService {
 
     await this.auditService.write({
       action: 'auth.login',
+      tenantId: user.tenantId,
+      userId: user.id,
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+
+    return sessionResponse;
+  }
+
+  /**
+   * Lets an already-authenticated device (an owner or another staff member
+   * logged in on a shared tablet) "switch user" to a PIN-only staff account
+   * without re-entering an email/password. The caller's own tenant scopes
+   * the lookup, so this can never be used to reach across tenants even if
+   * a userId were guessed.
+   */
+  async pinLogin(
+    callerTenantId: string,
+    input: PinLoginRequest,
+    meta: RequestMeta = {},
+  ): Promise<AuthSessionResponse> {
+    const user = await this.prismaService.prisma.user.findFirst({
+      where: { id: input.userId, tenantId: callerTenantId, deletedAt: null },
+    });
+
+    if (!user || !user.pinHash) {
+      throw new UnauthorizedException('Invalid PIN');
+    }
+
+    const valid = await this.passwordService.verify(user.pinHash, input.pin);
+    if (!valid) {
+      await this.auditService.write({
+        action: 'auth.failed_pin_login',
+        tenantId: callerTenantId,
+        userId: user.id,
+        ipAddress: meta.ipAddress,
+        userAgent: meta.userAgent,
+      });
+      throw new UnauthorizedException('Invalid PIN');
+    }
+
+    await this.prismaService.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
+    const sessionResponse = await this.issueSession(user.id, meta);
+
+    await this.auditService.write({
+      action: 'auth.pin_login',
       tenantId: user.tenantId,
       userId: user.id,
       ipAddress: meta.ipAddress,
@@ -188,7 +239,7 @@ export class AuthService {
       });
 
       await this.notificationService.enqueueEmail({
-        to: user.email,
+        to: input.email.toLowerCase(),
         subject: 'Reset your RestaurantOS password',
         template: 'password-reset',
         payload: {

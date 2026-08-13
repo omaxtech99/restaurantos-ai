@@ -57,8 +57,12 @@ model Tenant {
 model User {
   id                        String    @id @default(uuid()) @db.Uuid
   tenantId                  String    @db.Uuid
-  email                     String
-  passwordHash              String
+  /// Null for PIN-login staff accounts (waiter/kitchen) — they have no email.
+  email                     String?
+  /// Null for PIN-login staff accounts — see pinHash instead.
+  passwordHash              String?
+  /// Set only for PIN-login staff accounts (waiter/kitchen); null for owner/password accounts.
+  pinHash                   String?
   firstName                 String
   lastName                  String
   emailVerifiedAt           DateTime?

@@ -15,6 +15,6 @@ import { AuditModule } from '../audit/audit.module';
   imports: [JwtModule.register({}), TenantModule, RbacModule, NotificationModule, AuditModule],
   controllers: [AuthController],
   providers: [AuthService, PasswordService, TokenService, SessionService, JwtAuthGuard],
-  exports: [AuthService, JwtAuthGuard, TokenService],
+  exports: [AuthService, JwtAuthGuard, TokenService, PasswordService],
 })
 export class AuthModule {}

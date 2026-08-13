@@ -3,6 +3,7 @@ import {
   IsEmail,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
   MaxLength,
   MinLength,
@@ -101,4 +102,15 @@ export class VerifyEmailDto {
   @IsString()
   @MinLength(1)
   token!: string;
+}
+
+export class PinLoginDto {
+  @ApiProperty()
+  @IsUUID()
+  userId!: string;
+
+  @ApiProperty()
+  @IsString()
+  @Matches(/^\d{4}$/, { message: 'PIN must be exactly 4 digits' })
+  pin!: string;
 }

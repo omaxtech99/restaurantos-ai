@@ -12,6 +12,7 @@ import { AuthService } from '../application/auth.service';
 import {
   ForgotPasswordDto,
   LoginDto,
+  PinLoginDto,
   RefreshDto,
   ResetPasswordDto,
   SignupDto,
@@ -38,6 +39,13 @@ export class AuthController {
   @Post('refresh')
   refresh(@Body() body: RefreshDto, @Req() req: Request) {
     return this.authService.refresh(body, this.meta(req));
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post('pin-login')
+  pinLogin(@Body() body: PinLoginDto, @Req() req: AuthenticatedRequest) {
+    return this.authService.pinLogin(req.user!.tenantId, body, this.meta(req));
   }
 
   @Post('forgot-password')

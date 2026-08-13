@@ -68,4 +68,24 @@ export class OrderController {
   ) {
     return this.orderService.updateStatus(req.user!.tenantId, id, body.status);
   }
+
+  @RequirePermissions(PERMISSIONS.ORDER_KITCHEN)
+  @Patch(':id/kitchen-status')
+  updateKitchenStatus(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: UpdateOrderStatusDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.orderService.updateKitchenStatus(req.user!.tenantId, id, body.status);
+  }
+
+  @RequirePermissions(PERMISSIONS.ORDER_SERVE)
+  @Patch(':id/waiter-status')
+  updateWaiterStatus(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: UpdateOrderStatusDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.orderService.updateWaiterStatus(req.user!.tenantId, id, body.status);
+  }
 }

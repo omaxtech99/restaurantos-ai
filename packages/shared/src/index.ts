@@ -114,6 +114,21 @@ export const createTableSchema = z.object({
 
 export const updateTableSchema = createTableSchema.partial();
 
+export const STAFF_ROLES = ['waiter', 'kitchen'] as const;
+export type StaffRoleValue = (typeof STAFF_ROLES)[number];
+
+export const createStaffSchema = z.object({
+  firstName: z.string().trim().min(1).max(80),
+  lastName: z.string().trim().min(1).max(80),
+  role: z.enum(STAFF_ROLES),
+  pin: z.string().regex(/^\d{4}$/, 'PIN must be exactly 4 digits'),
+});
+
+export const pinLoginSchema = z.object({
+  userId: z.string().uuid(),
+  pin: z.string().regex(/^\d{4}$/, 'PIN must be exactly 4 digits'),
+});
+
 export const ORDER_STATUSES = [
   'open',
   'in_kitchen',
@@ -172,6 +187,12 @@ export const PERMISSIONS = {
   BRANCH_MANAGE: 'branch:manage',
   ORDER_READ: 'order:read',
   ORDER_MANAGE: 'order:manage',
+  /** Narrow permission: only the open->in_kitchen and in_kitchen->ready transitions. */
+  ORDER_KITCHEN: 'order:kitchen',
+  /** Narrow permission: only the ready->served and served->paid transitions. */
+  ORDER_SERVE: 'order:serve',
+  STAFF_READ: 'staff:read',
+  STAFF_MANAGE: 'staff:manage',
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -180,6 +201,10 @@ export const SYSTEM_ROLES = {
   OWNER: 'owner',
   ADMIN: 'admin',
   MEMBER: 'member',
+  /** PIN-login staff role: mark-served / mark-cash-paid only, no order-taking. */
+  WAITER: 'waiter',
+  /** PIN-login staff role: accept order / mark ready only. */
+  KITCHEN: 'kitchen',
 } as const;
 
 export type SystemRole = (typeof SYSTEM_ROLES)[keyof typeof SYSTEM_ROLES];

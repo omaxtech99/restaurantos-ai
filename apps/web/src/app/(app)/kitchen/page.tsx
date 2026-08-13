@@ -86,7 +86,7 @@ export default function KitchenPage() {
 
   const updateStatus = useMutation({
     mutationFn: ({ orderId, status }: { orderId: string; status: OrderStatusValue }) =>
-      apiRequest(`/orders/${orderId}/status`, {
+      apiRequest(`/orders/${orderId}/kitchen-status`, {
         method: 'PATCH',
         auth: true,
         body: JSON.stringify({ status }),

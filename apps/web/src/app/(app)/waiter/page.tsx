@@ -80,7 +80,7 @@ export default function WaiterPage() {
   // any other action, by design (see docs/12_PRODUCT_SCOPE.md Pillar 4).
   const updateStatus = useMutation({
     mutationFn: ({ orderId, status }: { orderId: string; status: OrderStatusValue }) =>
-      apiRequest(`/orders/${orderId}/status`, {
+      apiRequest(`/orders/${orderId}/waiter-status`, {
         method: 'PATCH',
         auth: true,
         body: JSON.stringify({ status }),

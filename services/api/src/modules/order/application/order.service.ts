@@ -1,4 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { isValidOrderStatusTransition, type OrderStatusValue } from '@restaurantos/shared';
 import type {
   AddOrderItemsRequest,
@@ -228,8 +233,13 @@ export class OrderService {
     tenantId: string,
     orderId: string,
     status: OrderStatusValue,
+    allowedStatuses?: OrderStatusValue[],
   ): Promise<OrderWithItems> {
     const order = await this.findOrderOrThrow(tenantId, orderId);
+
+    if (allowedStatuses && !allowedStatuses.includes(status)) {
+      throw new ForbiddenException(`This role cannot set order status to "${status}"`);
+    }
 
     if (!isValidOrderStatusTransition(order.status as OrderStatusValue, status)) {
       throw new ConflictException(`Cannot transition order from "${order.status}" to "${status}"`);
@@ -255,6 +265,24 @@ export class OrderService {
     const result = toOrderWithItems(updated);
     this.eventsGateway.emitOrderUpdate(tenantId, result);
     return result;
+  }
+
+  /** Kitchen-role staff: accept an order or mark it ready. Nothing else. */
+  updateKitchenStatus(
+    tenantId: string,
+    orderId: string,
+    status: OrderStatusValue,
+  ): Promise<OrderWithItems> {
+    return this.updateStatus(tenantId, orderId, status, ['in_kitchen', 'ready']);
+  }
+
+  /** Waiter-role staff: mark an order served, or mark a cash payment paid. Nothing else. */
+  updateWaiterStatus(
+    tenantId: string,
+    orderId: string,
+    status: OrderStatusValue,
+  ): Promise<OrderWithItems> {
+    return this.updateStatus(tenantId, orderId, status, ['served', 'paid']);
   }
 
   private async loadOrderableMenuItems(

@@ -48,6 +48,12 @@ export default function AppShellPage() {
           <Button variant="outline" asChild>
             <Link href="/waiter">Waiter</Link>
           </Button>
+          <Button variant="outline" asChild>
+            <Link href="/staff">Staff</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/switch-user">Switch user</Link>
+          </Button>
           <Button
             variant="outline"
             onClick={async () => {
@@ -75,7 +81,7 @@ export default function AppShellPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>Email: {user.email}</p>
+            <p>Email: {user.email ?? '— (PIN login)'}</p>
             <p>Tenant: {user.tenantId}</p>
             <p>Roles: {user.roles.join(', ') || 'none'}</p>
             <Link href="/login" className="inline-block pt-2 text-foreground hover:underline">
