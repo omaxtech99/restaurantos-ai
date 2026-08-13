@@ -211,8 +211,11 @@ infrastructure the previous one established.
    served, or cash via waiter as before; GST itself deferred, see §4
    non-goals; Razorpay send is wired but degrades gracefully until real
    keys are supplied, same posture as WhatsApp
-9. Rich dish content (AI auto-fill + R2 media + taste/flavor profile +
-   nutrition + dietary filters)
+9. ✅ Rich dish content — AI auto-fill (OpenAI) drafts description/taste
+   profile/nutrition/dietary tags from just a name, staff review before
+   saving; photos/video upload straight to Cloudflare R2; both degrade
+   gracefully until real keys are supplied, same posture as WhatsApp/
+   Razorpay
 10. Feedback/ratings (verified, WhatsApp-triggered)
 11. Discovery (cross-restaurant, depends on 9 and 10)
 12. Reservations (shares patterns with Waitlist)

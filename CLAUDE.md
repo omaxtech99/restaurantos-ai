@@ -218,9 +218,32 @@ work, not a gap in what shipped.
    sees "ask your waiter for the bill" instead of a broken button —
    verified this degrades cleanly with a full Playwright run, plus curl
    checks of both the "not served yet" 409 and a garbage-signature 400.
+10. **Rich dish content** (`modules/ai`, `modules/media`, Menu page's
+    "Dish content" dialog) — the "help customers understand unfamiliar
+    food" feature from the original vision. Staff click "Auto-fill with
+    AI" and `AiService.suggestDishContent` (`modules/ai`) calls OpenAI
+    with just the dish name, asking for strict JSON (description, a
+    0–5 spicy/sweet/sour/salty/umami taste profile, an estimated
+    nutrition breakdown, dietary tags) — this only ever returns a
+    *suggestion*; nothing is written to the menu until staff edits and
+    clicks Save on the existing item-update endpoint, matching the
+    "staff reviews before publishing" requirement from day one. Photos
+    and a short prep video upload straight from the browser to
+    Cloudflare R2 via a short-lived presigned PUT URL
+    (`MediaService.presignUpload`, `modules/media`) — the file never
+    passes through the API server. Customers see the photo, video,
+    taste profile (as a bar chart), nutrition, and dietary badges in a
+    detail view before ordering — verified end-to-end with a full
+    Playwright run (staff filling in content by hand, customer viewing
+    it) plus a direct curl check that AI-suggest correctly attempts a
+    real OpenAI call using real credentials (blocked only by this
+    sandbox's own network policy, not a code issue). Both OpenAI and R2
+    degrade gracefully when not configured, same posture as WhatsApp/
+    Razorpay — `menu_items` gains `tasteProfile`/`nutritionInfo` (JSON),
+    `dietaryTags` (string array), `photoUrl`, `videoUrl`.
 
 Not yet built: everything else in `docs/12_PRODUCT_SCOPE.md`'s build order
-— rich dish content is next.
+— feedback/ratings is next.
 
 ## Deployment
 
