@@ -184,23 +184,32 @@ infrastructure the previous one established.
    real events so kitchen/waiter see new orders instantly instead of
    polling/refreshing; waiter screen is deliberately narrow (mark served,
    mark cash paid — no order-taking, by design)
-6. 🔜 **Waitlist + WhatsApp** — highest real-world priority for reception-area
+6. ✅ PIN-login staff accounts — pulled forward from its original spot
+   (previously listed here as "Staff & Waiter granular permissions,"
+   further down the order) once it became clear the Kitchen/Waiter
+   narrowness from step 5 was UI-only: any login was still the Owner, so
+   nothing actually stopped a waiter from opening `/orders` and doing
+   anything. Owner now creates PIN-only Waiter/Kitchen staff from
+   `/staff`; `/switch-user` swaps the shared device's session to a staff
+   member's own token; the narrow permissions (`order:serve`,
+   `order:kitchen`) are real and enforced server-side. See `CLAUDE.md`.
+7. 🔜 **Waitlist + WhatsApp** — highest real-world priority for reception-area
    rush (Mumbai walk-ins); builds on existing Branch/Table data; Meta
    WhatsApp Cloud API already tested by the founder, not a blocker
-7. Simple non-GST billing + Razorpay (GST deferred — see §4 non-goals)
-8. Rich dish content (AI auto-fill + R2 media + taste/flavor profile +
+8. Simple non-GST billing + Razorpay (GST deferred — see §4 non-goals)
+9. Rich dish content (AI auto-fill + R2 media + taste/flavor profile +
    nutrition + dietary filters)
-9. Feedback/ratings (verified, WhatsApp-triggered)
-10. Discovery (cross-restaurant, depends on 8 and 9)
-11. Reservations (shares patterns with Waitlist)
-12. Full GST-compliant Billing & Payments
-13. Inventory & Kitchen Ops (KOT, recipe-based stock tracking)
-14. Staff & Waiter granular permissions (PIN login, shifts, roles beyond the
-    narrow default)
-15. AI insights & growth (owner insights, recommendations, upsells,
+10. Feedback/ratings (verified, WhatsApp-triggered)
+11. Discovery (cross-restaurant, depends on 9 and 10)
+12. Reservations (shares patterns with Waitlist)
+13. Full GST-compliant Billing & Payments
+14. Inventory & Kitchen Ops (KOT, recipe-based stock tracking)
+15. Staff shifts and roles beyond the narrow Waiter/Kitchen default (the
+    account/PIN mechanics themselves already shipped in step 6)
+16. AI insights & growth (owner insights, recommendations, upsells,
     campaigns — first slice of the much larger backlog in
     [`13_FUTURE_VISION.md`](./13_FUTURE_VISION.md))
-16. Scale & reliability (multi-branch reporting, offline resilience,
+17. Scale & reliability (multi-branch reporting, offline resilience,
     multi-language, table turnover analytics)
 
 This order reflects the actual re-prioritization agreed mid-project (ship a

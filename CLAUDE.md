@@ -137,11 +137,29 @@ work, not a gap in what shipped.
    shows open/in-kitchen orders oldest-first with an elapsed-wait timer,
    limited to "Accept order" / "Mark ready". Waiter shows ready/served
    orders, limited to "Mark served" / "Mark paid (cash)" — no order-taking,
-   editing, or cancelling, enforced simply by never rendering those actions
-   (a real per-user Waiter *role* that can't even call the broader
-   `order:manage`-gated endpoints is still future work — see "Staff & Waiter
-   granular permissions" in the build order; there's no multi-user-per-tenant
-   staff invite flow yet, so today every login is effectively the owner).
+   editing, or cancelling — and as of the next item below, this is now a
+   real API-enforced boundary, not just which buttons render.
+6. **PIN-login staff accounts** (`modules/staff`, `/staff`, `/switch-user`)
+   — closes the gap noted above. Staff have no email/password; the Owner
+   creates them with just a name + role (`waiter`/`kitchen`) + 4-digit PIN
+   from `/staff`. `POST /auth/pin-login` (guarded by `JwtAuthGuard` — the
+   *device* must already hold a valid session, staff can't log in from
+   scratch) swaps the current session to that staff member's own token via
+   the same `issueSession()` used by normal login, so `/switch-user` is a
+   same-device "hand it to the next person" flow, not a fresh sign-in.
+   Waiter/Kitchen roles get `order:read`, `branch:read`, `staff:read` (to
+   see who to hand off to), and exactly one narrow order permission each
+   (`order:serve` / `order:kitchen`) — never `order:manage`. Two new
+   endpoints, `PATCH /orders/:id/kitchen-status` and `.../waiter-status`,
+   are gated by those narrow permissions **and** additionally allow-list
+   the exact transitions each accepts (kitchen: open→in_kitchen,
+   in_kitchen→ready; waiter: ready→served, served→paid) — so even a
+   compromised or buggy frontend can't be used to reach `order:manage`-only
+   actions like create/cancel through these routes. Verified with curl
+   directly against the API (not just the UI) that a waiter token gets 403
+   on order creation, the generic `/status` endpoint, and the kitchen
+   endpoint. `User.email`/`passwordHash` are now nullable (PIN accounts
+   have neither); `User.pinHash` is new.
 
 Not yet built: everything else in `docs/12_PRODUCT_SCOPE.md`'s build order
 — Waitlist + WhatsApp is next.
@@ -264,6 +282,15 @@ branches without checking first.
   — treat it as still-live sensitive data until confirmed otherwise, and
   don't add real secrets to any file that gets committed, ever, even
   "example" files.
+- **A narrow UI is not narrow RBAC.** The first version of the Waiter/
+  Kitchen screens only hid buttons for actions those roles "shouldn't" do
+  — but since every login was still the Owner (no staff-invite system
+  existed yet), the same person could just open `/orders` directly and do
+  anything. Hiding a button is not a permission boundary; only a
+  `@RequirePermissions` check the account genuinely lacks is. Any future
+  "narrow screen for a role" feature needs the real account/permission
+  split from the start, not as a follow-up — see "PIN-login staff
+  accounts" above for the fix once this was caught.
 
 ## Where to look next
 
