@@ -129,6 +129,16 @@ export const pinLoginSchema = z.object({
   pin: z.string().regex(/^\d{4}$/, 'PIN must be exactly 4 digits'),
 });
 
+export const joinWaitlistSchema = z.object({
+  branchId: z.string().uuid(),
+  customerName: z.string().trim().min(1).max(120),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^\+?[1-9]\d{7,14}$/, 'Enter a valid phone number in international format, e.g. +919876543210'),
+  partySize: z.number().int().min(1).max(50),
+});
+
 export const ORDER_STATUSES = [
   'open',
   'in_kitchen',
@@ -193,6 +203,8 @@ export const PERMISSIONS = {
   ORDER_SERVE: 'order:serve',
   STAFF_READ: 'staff:read',
   STAFF_MANAGE: 'staff:manage',
+  WAITLIST_READ: 'waitlist:read',
+  WAITLIST_MANAGE: 'waitlist:manage',
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

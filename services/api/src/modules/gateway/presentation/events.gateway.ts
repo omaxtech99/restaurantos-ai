@@ -6,7 +6,7 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import type { OrderWithItems, WaiterCallEvent } from '@restaurantos/types';
+import type { OrderWithItems, WaiterCallEvent, WaitlistEntry } from '@restaurantos/types';
 import { TokenService } from '../../auth/application/token.service';
 import { AppLogger } from '../../logger/app-logger.service';
 
@@ -68,5 +68,9 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   emitWaiterCall(tenantId: string, event: WaiterCallEvent): void {
     this.server.to(`tenant:${tenantId}`).emit('waiter_calls', event);
+  }
+
+  emitWaitlistUpdate(tenantId: string, entry: WaitlistEntry): void {
+    this.server.to(`tenant:${tenantId}`).emit('waitlist_updates', entry);
   }
 }

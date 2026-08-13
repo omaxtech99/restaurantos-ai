@@ -291,3 +291,20 @@ export interface WaiterCallEvent {
 export interface CallWaiterResponse {
   nextAvailableAt: string;
 }
+
+export type WaitlistStatusValue = 'waiting' | 'notified' | 'seated' | 'cancelled';
+
+export interface WaitlistEntry {
+  id: Uuid;
+  tenantId: Uuid;
+  branchId: Uuid;
+  customerName: string;
+  phone: string;
+  partySize: number;
+  status: WaitlistStatusValue;
+  notifiedAt: string | null;
+  seatedAt: string | null;
+  cancelledAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

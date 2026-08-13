@@ -49,6 +49,9 @@ export default function AppShellPage() {
             <Link href="/waiter">Waiter</Link>
           </Button>
           <Button variant="outline" asChild>
+            <Link href="/waitlist">Waitlist</Link>
+          </Button>
+          <Button variant="outline" asChild>
             <Link href="/staff">Staff</Link>
           </Button>
           <Button variant="outline" asChild>

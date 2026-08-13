@@ -29,6 +29,13 @@ enum OrderStatus {
   cancelled
 }
 
+enum WaitlistStatus {
+  waiting
+  notified
+  seated
+  cancelled
+}
+
 model Tenant {
   id        String    @id @default(uuid()) @db.Uuid
   name      String
@@ -49,6 +56,7 @@ model Tenant {
   tables         Table[]
   orders         Order[]
   orderItems     OrderItem[]
+  waitlistEntries WaitlistEntry[]
 
   @@index([deletedAt])
   @@map("tenants")
@@ -255,9 +263,10 @@ model Branch {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  tables Table[]
-  orders Order[]
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tables         Table[]
+  orders         Order[]
+  waitlistEntries WaitlistEntry[]
 
   @@unique([tenantId, name])
   @@index([tenantId, deletedAt])
@@ -322,4 +331,25 @@ model OrderItem {
 
   @@index([tenantId, orderId])
   @@map("order_items")
+}
+
+model WaitlistEntry {
+  id           String         @id @default(uuid()) @db.Uuid
+  tenantId     String         @db.Uuid
+  branchId     String         @db.Uuid
+  customerName String
+  phone        String
+  partySize    Int
+  status       WaitlistStatus @default(waiting)
+  notifiedAt   DateTime?
+  seatedAt     DateTime?
+  cancelledAt  DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, branchId, status])
+  @@map("waitlist_entries")
 }

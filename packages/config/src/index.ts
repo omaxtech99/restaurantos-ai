@@ -34,6 +34,9 @@ export const notificationEnvSchema = z.object({
   SMTP_URL: z.string().min(1),
   EMAIL_FROM: z.string().min(1),
   DATABASE_URL: z.string().min(1).optional(),
+  WHATSAPP_ACCESS_TOKEN: optionalString,
+  WHATSAPP_PHONE_NUMBER_ID: optionalString,
+  WHATSAPP_TEMPLATE_NAME: optionalString,
 });
 
 export type NotificationEnv = z.infer<typeof notificationEnvSchema>;

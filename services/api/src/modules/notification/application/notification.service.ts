@@ -9,9 +9,16 @@ export interface EmailJob {
   payload: Record<string, string>;
 }
 
+export interface WhatsAppJob {
+  to: string;
+  template: 'table-ready';
+  payload: Record<string, string>;
+}
+
 @Injectable()
 export class NotificationService {
-  private readonly queueKey = 'restaurantos:notifications:email';
+  private readonly emailQueueKey = 'restaurantos:notifications:email';
+  private readonly whatsappQueueKey = 'restaurantos:notifications:whatsapp';
 
   constructor(
     private readonly redisService: RedisService,
@@ -20,7 +27,13 @@ export class NotificationService {
 
   async enqueueEmail(job: EmailJob): Promise<void> {
     await this.redisService.connect();
-    await this.redisService.redis.lpush(this.queueKey, JSON.stringify(job));
+    await this.redisService.redis.lpush(this.emailQueueKey, JSON.stringify(job));
     this.logger.log(`Queued email template=${job.template} to=${job.to}`, 'NotificationService');
+  }
+
+  async enqueueWhatsApp(job: WhatsAppJob): Promise<void> {
+    await this.redisService.connect();
+    await this.redisService.redis.lpush(this.whatsappQueueKey, JSON.stringify(job));
+    this.logger.log(`Queued WhatsApp template=${job.template} to=${job.to}`, 'NotificationService');
   }
 }

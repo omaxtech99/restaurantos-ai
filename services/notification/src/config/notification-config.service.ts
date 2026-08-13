@@ -24,4 +24,20 @@ export class NotificationConfigService {
   get emailFrom(): string {
     return this.env.EMAIL_FROM;
   }
+
+  get whatsappAccessToken(): string | undefined {
+    return this.env.WHATSAPP_ACCESS_TOKEN;
+  }
+
+  get whatsappPhoneNumberId(): string | undefined {
+    return this.env.WHATSAPP_PHONE_NUMBER_ID;
+  }
+
+  get whatsappTemplateName(): string {
+    return this.env.WHATSAPP_TEMPLATE_NAME ?? 'hello_world';
+  }
+
+  get whatsappConfigured(): boolean {
+    return Boolean(this.env.WHATSAPP_ACCESS_TOKEN && this.env.WHATSAPP_PHONE_NUMBER_ID);
+  }
 }

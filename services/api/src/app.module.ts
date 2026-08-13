@@ -15,6 +15,7 @@ import { BranchModule } from './modules/branch/branch.module';
 import { OrderModule } from './modules/order/order.module';
 import { PublicModule } from './modules/public/public.module';
 import { StaffModule } from './modules/staff/staff.module';
+import { WaitlistModule } from './modules/waitlist/waitlist.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { StaffModule } from './modules/staff/staff.module';
     OrderModule,
     PublicModule,
     StaffModule,
+    WaitlistModule,
   ],
 })
 export class AppModule {}

@@ -13,6 +13,7 @@ import type {
 } from '@restaurantos/types';
 import { PrismaService } from '../../database/prisma.service';
 import { EventsGateway } from '../../gateway/presentation/events.gateway';
+import { WaitlistService } from '../../waitlist/application/waitlist.service';
 
 interface OrderItemRecord {
   id: string;
@@ -79,6 +80,7 @@ export class OrderService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly eventsGateway: EventsGateway,
+    private readonly waitlistService: WaitlistService,
   ) {}
 
   async listOrders(tenantId: string, filters: ListOrdersFilters = {}): Promise<OrderWithItems[]> {
@@ -264,6 +266,11 @@ export class OrderService {
 
     const result = toOrderWithItems(updated);
     this.eventsGateway.emitOrderUpdate(tenantId, result);
+
+    if (status === 'paid' || status === 'cancelled') {
+      await this.waitlistService.notifyNextInQueue(tenantId, order.branchId);
+    }
+
     return result;
   }
 
