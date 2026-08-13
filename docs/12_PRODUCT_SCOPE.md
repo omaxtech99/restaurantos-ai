@@ -180,11 +180,11 @@ infrastructure the previous one established.
 4. ✅ Customer self-ordering (QR → menu → order → live status) — re-prioritized
    ahead of Waitlist so there was a demoable, sellable customer-facing flow
    as early as possible; see `CLAUDE.md` for how it was built and verified
-5. 🔜 **Kitchen + Waiter live screens** — Socket.IO `order_updates` wired to
+5. ✅ Kitchen + Waiter live screens — Socket.IO `order_updates` wired to
    real events so kitchen/waiter see new orders instantly instead of
    polling/refreshing; waiter screen is deliberately narrow (mark served,
    mark cash paid — no order-taking, by design)
-6. **Waitlist + WhatsApp** — highest real-world priority for reception-area
+6. 🔜 **Waitlist + WhatsApp** — highest real-world priority for reception-area
    rush (Mumbai walk-ins); builds on existing Branch/Table data; Meta
    WhatsApp Cloud API already tested by the founder, not a blocker
 7. Simple non-GST billing + Razorpay (GST deferred — see §4 non-goals)

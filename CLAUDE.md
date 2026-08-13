@@ -95,11 +95,20 @@ is the one fetch wrapper — pass `{ auth: true }` to attach the JWT, omit it
 for public/anonymous calls (see `apps/web/src/app/(customer)/t/[tableId]/`
 for the public-page pattern).
 
-**Realtime**: Socket.IO gateway is scaffolded (`gateway` module, events
-`notifications` / `order_updates` / `waiter_calls`) but **not yet wired to
-real business events** — the customer order-status page currently polls
-every 5s instead. Wiring this up is the next planned slice (Kitchen + Waiter
-live screens).
+**Realtime**: Socket.IO gateway (`gateway` module) is wired to real order
+events. `OrderService` (in `order` module) injects `EventsGateway` and calls
+`emitOrderUpdate(tenantId, order)` after every create/addItems/status change
+— whether the order came from staff or from an anonymous customer via the
+public ordering flow — emitting to the `tenant:${tenantId}` room the gateway
+already places connected staff sockets into on JWT-authenticated connect.
+`apps/web/src/lib/use-order-updates.ts` is the one client-side hook that
+subscribes; the Kitchen (`/kitchen`), Waiter (`/waiter`), and staff Orders
+(`/orders`) pages all use it instead of a tight poll interval (each still
+keeps a 30s poll as a fallback in case the socket drops). The customer-facing
+public order-status page is **not** on this socket — it has no JWT to
+authenticate a connection with — and still polls every 5s; wiring public/
+anonymous realtime (e.g. a per-table or per-order room) is unscoped future
+work, not a gap in what shipped.
 
 ## What's built so far
 
@@ -123,9 +132,19 @@ live screens).
    status is stored in the browser's `sessionStorage` (keyed by table ID)
    so a page reload doesn't lose the customer's place, and polls every 5s
    for status updates (kitchen → ready → served).
+5. **Kitchen + Waiter live screens** (`apps/web/.../kitchen/`,
+   `.../waiter/`) — real-time replacements for refresh-to-check. Kitchen
+   shows open/in-kitchen orders oldest-first with an elapsed-wait timer,
+   limited to "Accept order" / "Mark ready". Waiter shows ready/served
+   orders, limited to "Mark served" / "Mark paid (cash)" — no order-taking,
+   editing, or cancelling, enforced simply by never rendering those actions
+   (a real per-user Waiter *role* that can't even call the broader
+   `order:manage`-gated endpoints is still future work — see "Staff & Waiter
+   granular permissions" in the build order; there's no multi-user-per-tenant
+   staff invite flow yet, so today every login is effectively the owner).
 
 Not yet built: everything else in `docs/12_PRODUCT_SCOPE.md`'s build order
-— Kitchen/Waiter live screens is next.
+— Waitlist + WhatsApp is next.
 
 ## Deployment
 
