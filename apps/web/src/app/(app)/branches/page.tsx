@@ -7,8 +7,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createBranchSchema, createTableSchema } from '@restaurantos/shared';
-import type { BranchWithTables } from '@restaurantos/types';
+import type { BranchWithTables, Table as TableRecord } from '@restaurantos/types';
 import { z } from 'zod';
+import QRCode from 'qrcode';
 import {
   Badge,
   Button,
@@ -106,6 +107,26 @@ export default function BranchesPage() {
       apiRequest(`/tables/${tableId}`, { method: 'DELETE', auth: true }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['branches'] }),
   });
+
+  const [qrTable, setQrTable] = useState<TableRecord | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const orderUrl = qrTable && typeof window !== 'undefined' ? `${window.location.origin}/t/${qrTable.id}` : '';
+
+  useEffect(() => {
+    if (!qrTable || !orderUrl) {
+      setQrDataUrl(null);
+      return;
+    }
+    let cancelled = false;
+    QRCode.toDataURL(orderUrl, { width: 240, margin: 1 }).then((url) => {
+      if (!cancelled) setQrDataUrl(url);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [qrTable, orderUrl]);
 
   if (!hasHydrated || !accessToken) {
     return null;
@@ -220,7 +241,12 @@ export default function BranchesPage() {
                             id="table-capacity"
                             type="number"
                             min={1}
-                            {...tableForm.register('capacity', { valueAsNumber: true })}
+                            {...tableForm.register('capacity', {
+                              setValueAs: (value) =>
+                                value === '' || value === null || value === undefined
+                                  ? undefined
+                                  : Number(value),
+                            })}
                           />
                         </div>
                         {createTable.isError ? (
@@ -270,14 +296,19 @@ export default function BranchesPage() {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => deleteTable.mutate(table.id)}
-                              disabled={deleteTable.isPending}
-                            >
-                              Delete
-                            </Button>
+                            <div className="flex justify-end gap-2">
+                              <Button variant="outline" size="sm" onClick={() => setQrTable(table)}>
+                                Order QR
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => deleteTable.mutate(table.id)}
+                                disabled={deleteTable.isPending}
+                              >
+                                Delete
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -289,6 +320,54 @@ export default function BranchesPage() {
           ))
         )}
       </main>
+
+      <Dialog
+        open={qrTable !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setQrTable(null);
+            setCopied(false);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{qrTable?.label} &middot; ordering QR</DialogTitle>
+            <DialogDescription>
+              Print this and place it on the table. Scanning opens the menu directly &mdash; no
+              app or login required.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4">
+            {qrDataUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={qrDataUrl}
+                alt={`QR code linking to the order page for ${qrTable?.label}`}
+                width={240}
+                height={240}
+                className="rounded-xl border"
+              />
+            ) : (
+              <Skeleton className="h-60 w-60" />
+            )}
+            <div className="flex w-full items-center gap-2">
+              <Input readOnly value={orderUrl} className="text-xs" />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(orderUrl);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1500);
+                }}
+              >
+                {copied ? 'Copied' : 'Copy'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

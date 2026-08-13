@@ -92,6 +92,24 @@ export class OrderService {
     return toOrderWithItems(order);
   }
 
+  /**
+   * Unauthenticated customers have no tenant context to scope by. The order
+   * ID itself (an unguessable UUID, handed back only to the customer who
+   * placed it) is the access control here, same model as the table link.
+   */
+  async getOrderForCustomer(orderId: string): Promise<OrderWithItems> {
+    const order = await this.prismaService.prisma.order.findFirst({
+      where: { id: orderId },
+      include: { items: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    return toOrderWithItems(order);
+  }
+
   async createOrder(tenantId: string, input: CreateOrderRequest): Promise<OrderWithItems> {
     const table = await this.prismaService.prisma.table.findFirst({
       where: { id: input.tableId, tenantId, deletedAt: null },

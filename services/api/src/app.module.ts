@@ -13,6 +13,7 @@ import { LoggerModule } from './modules/logger/logger.module';
 import { MenuModule } from './modules/menu/menu.module';
 import { BranchModule } from './modules/branch/branch.module';
 import { OrderModule } from './modules/order/order.module';
+import { PublicModule } from './modules/public/public.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { OrderModule } from './modules/order/order.module';
     MenuModule,
     BranchModule,
     OrderModule,
+    PublicModule,
   ],
 })
 export class AppModule {}

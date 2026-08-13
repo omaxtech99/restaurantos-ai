@@ -8,5 +8,6 @@ import { RbacModule } from '../rbac/rbac.module';
   imports: [AuthModule, RbacModule],
   controllers: [OrderController],
   providers: [OrderService],
+  exports: [OrderService],
 })
 export class OrderModule {}

@@ -1,0 +1,345 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type {
+  MenuItem,
+  OrderStatus,
+  OrderWithItems,
+  PublicTableContext,
+} from '@restaurantos/types';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  EmptyState,
+  ErrorState,
+  Skeleton,
+} from '@restaurantos/ui';
+import { apiRequest } from '@/lib/api';
+
+const STATUS_LABEL: Record<OrderStatus, string> = {
+  open: 'Order received',
+  in_kitchen: 'Being prepared',
+  ready: 'Ready to be served',
+  served: 'Served — enjoy your meal',
+  paid: 'Paid — thank you!',
+  cancelled: 'Cancelled',
+};
+
+const STATUS_BADGE_VARIANT: Record<OrderStatus, 'default' | 'secondary' | 'outline'> = {
+  open: 'outline',
+  in_kitchen: 'secondary',
+  ready: 'secondary',
+  served: 'default',
+  paid: 'default',
+  cancelled: 'outline',
+};
+
+function formatPrice(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+function sessionKey(tableId: string): string {
+  return `restaurantos-order-${tableId}`;
+}
+
+export default function TableOrderPage() {
+  const params = useParams<{ tableId: string }>();
+  const tableId = params.tableId;
+  const queryClient = useQueryClient();
+
+  const [cart, setCart] = useState<Record<string, number>>({});
+  const [cartOpen, setCartOpen] = useState(false);
+  const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem(sessionKey(tableId));
+    if (stored) setActiveOrderId(stored);
+  }, [tableId]);
+
+  const contextQuery = useQuery({
+    queryKey: ['public-table', tableId],
+    queryFn: () => apiRequest<PublicTableContext>(`/public/tables/${tableId}`),
+  });
+
+  const orderQuery = useQuery({
+    queryKey: ['public-order', activeOrderId],
+    queryFn: () => apiRequest<OrderWithItems>(`/public/orders/${activeOrderId}`),
+    enabled: Boolean(activeOrderId),
+    refetchInterval: 5_000,
+  });
+
+  const allItems = useMemo(
+    () => (contextQuery.data?.categories ?? []).flatMap((category) => category.items),
+    [contextQuery.data],
+  );
+
+  const cartLines = useMemo(
+    () =>
+      Object.entries(cart)
+        .filter(([, quantity]) => quantity > 0)
+        .map(([menuItemId, quantity]) => {
+          const item = allItems.find((candidate) => candidate.id === menuItemId) as MenuItem;
+          return { item, quantity };
+        })
+        .filter((line) => Boolean(line.item)),
+    [cart, allItems],
+  );
+
+  const cartCount = cartLines.reduce((sum, line) => sum + line.quantity, 0);
+  const cartTotal = cartLines.reduce((sum, line) => sum + line.quantity * line.item.priceCents, 0);
+
+  const placeOrder = useMutation({
+    mutationFn: () =>
+      apiRequest<OrderWithItems>(`/public/tables/${tableId}/orders`, {
+        method: 'POST',
+        body: JSON.stringify({
+          items: cartLines.map((line) => ({ menuItemId: line.item.id, quantity: line.quantity })),
+        }),
+      }),
+    onSuccess: (order) => {
+      sessionStorage.setItem(sessionKey(tableId), order.id);
+      setActiveOrderId(order.id);
+      setCart({});
+      setCartOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['public-order', order.id] });
+    },
+  });
+
+  function addToCart(menuItemId: string) {
+    setCart((current) => ({ ...current, [menuItemId]: (current[menuItemId] ?? 0) + 1 }));
+  }
+
+  function removeFromCart(menuItemId: string) {
+    setCart((current) => {
+      const next = { ...current };
+      const quantity = (next[menuItemId] ?? 0) - 1;
+      if (quantity <= 0) {
+        delete next[menuItemId];
+      } else {
+        next[menuItemId] = quantity;
+      }
+      return next;
+    });
+  }
+
+  if (contextQuery.isLoading) {
+    return (
+      <div className="mx-auto max-w-md space-y-4 px-5 py-10">
+        <Skeleton className="h-8 w-2/3" />
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-40 w-full" />
+      </div>
+    );
+  }
+
+  if (contextQuery.isError || !contextQuery.data) {
+    return (
+      <div className="mx-auto max-w-md px-5 py-10">
+        <ErrorState
+          title="Table not found"
+          description="This ordering link doesn't match an active table. Please ask staff for help."
+        />
+      </div>
+    );
+  }
+
+  const { table, categories } = contextQuery.data;
+  const order = orderQuery.data;
+
+  if (activeOrderId) {
+    return (
+      <div className="mx-auto min-h-screen max-w-md space-y-6 px-5 py-10">
+        <div>
+          <p className="text-sm text-muted-foreground">{table.restaurantName}</p>
+          <h1 className="font-display text-2xl font-semibold tracking-tight">{table.label}</h1>
+        </div>
+
+        {orderQuery.isLoading || !order ? (
+          <Skeleton className="h-56 w-full" />
+        ) : (
+          <Card className="animate-fade-in">
+            <CardHeader>
+              <div className="flex items-center justify-between gap-3">
+                <CardTitle>Your order</CardTitle>
+                <Badge variant={STATUS_BADGE_VARIANT[order.status]}>
+                  {STATUS_LABEL[order.status]}
+                </Badge>
+              </div>
+              <CardDescription>{formatPrice(order.totalCents)} total</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-1.5 text-sm">
+                {order.items.map((item) => (
+                  <div key={item.id} className="flex justify-between text-muted-foreground">
+                    <span>
+                      {item.quantity}x {item.name}
+                    </span>
+                    <span>{formatPrice(item.quantity * item.unitPriceCents)}</span>
+                  </div>
+                ))}
+              </div>
+              {order.status !== 'paid' && order.status !== 'cancelled' ? (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    sessionStorage.removeItem(sessionKey(tableId));
+                    setActiveOrderId(null);
+                  }}
+                >
+                  Order more
+                </Button>
+              ) : null}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto min-h-screen max-w-md pb-28">
+      <header className="px-5 pt-10 pb-6">
+        <p className="text-sm text-muted-foreground">{table.restaurantName}</p>
+        <h1 className="font-display text-2xl font-semibold tracking-tight">{table.label}</h1>
+      </header>
+
+      <main className="space-y-6 px-5">
+        {categories.length === 0 ? (
+          <EmptyState
+            title="Menu not available"
+            description="This restaurant hasn't published any items yet."
+          />
+        ) : (
+          categories.map((category) => (
+            <section key={category.id} className="space-y-3">
+              <h2 className="font-display text-lg font-semibold">{category.name}</h2>
+              <div className="space-y-3">
+                {category.items.map((item) => {
+                  const quantity = cart[item.id] ?? 0;
+                  return (
+                    <Card key={item.id}>
+                      <CardContent className="flex items-start justify-between gap-4 py-4">
+                        <div className="min-w-0">
+                          <p className="font-medium">{item.name}</p>
+                          {item.description ? (
+                            <p className="mt-0.5 text-sm text-muted-foreground">
+                              {item.description}
+                            </p>
+                          ) : null}
+                          <p className="mt-1.5 text-sm font-medium">
+                            {formatPrice(item.priceCents)}
+                          </p>
+                        </div>
+                        <div className="flex flex-none items-center gap-2">
+                          {quantity > 0 ? (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                aria-label={`Remove one ${item.name}`}
+                                onClick={() => removeFromCart(item.id)}
+                              >
+                                &minus;
+                              </Button>
+                              <span className="w-4 text-center text-sm font-medium">
+                                {quantity}
+                              </span>
+                            </>
+                          ) : null}
+                          <Button
+                            variant={quantity > 0 ? 'outline' : 'default'}
+                            size="sm"
+                            aria-label={`Add ${item.name}`}
+                            onClick={() => addToCart(item.id)}
+                          >
+                            {quantity > 0 ? '+' : 'Add'}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </section>
+          ))
+        )}
+      </main>
+
+      {cartCount > 0 ? (
+        <div className="fixed inset-x-0 bottom-0 border-t bg-background/95 px-5 py-4 backdrop-blur">
+          <div className="mx-auto max-w-md">
+            <Button className="w-full justify-between" onClick={() => setCartOpen(true)}>
+              <span>
+                View order &middot; {cartCount} item{cartCount === 1 ? '' : 's'}
+              </span>
+              <span>{formatPrice(cartTotal)}</span>
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      <Dialog open={cartOpen} onOpenChange={setCartOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Your order</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              {cartLines.map((line) => (
+                <div
+                  key={line.item.id}
+                  className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm"
+                >
+                  <span>
+                    {line.quantity}x {line.item.name}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <span>{formatPrice(line.quantity * line.item.priceCents)}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeFromCart(line.item.id)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-between border-t pt-3 text-sm font-medium">
+              <span>Total</span>
+              <span>{formatPrice(cartTotal)}</span>
+            </div>
+            {placeOrder.isError ? (
+              <p className="text-sm text-destructive">
+                {placeOrder.error instanceof Error
+                  ? placeOrder.error.message
+                  : 'Unable to place order'}
+              </p>
+            ) : null}
+            <Button
+              className="w-full"
+              disabled={cartLines.length === 0 || placeOrder.isPending}
+              onClick={() => placeOrder.mutate()}
+            >
+              {placeOrder.isPending ? 'Placing order…' : `Place order • ${formatPrice(cartTotal)}`}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

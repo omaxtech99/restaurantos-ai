@@ -8,5 +8,6 @@ import { RbacModule } from '../rbac/rbac.module';
   imports: [AuthModule, RbacModule],
   controllers: [MenuController],
   providers: [MenuService],
+  exports: [MenuService],
 })
 export class MenuModule {}

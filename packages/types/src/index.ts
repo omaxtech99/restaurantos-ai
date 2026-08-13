@@ -256,3 +256,15 @@ export interface AddOrderItemsRequest {
 export interface UpdateOrderStatusRequest {
   status: OrderStatus;
 }
+
+export interface PublicTableInfo {
+  id: Uuid;
+  label: string;
+  branchName: string;
+  restaurantName: string;
+}
+
+export interface PublicTableContext {
+  table: PublicTableInfo;
+  categories: MenuCategoryWithItems[];
+}
