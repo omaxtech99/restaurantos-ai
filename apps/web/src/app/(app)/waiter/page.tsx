@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { OrderStatusValue } from '@restaurantos/shared';
-import type { BranchWithTables, OrderWithItems } from '@restaurantos/types';
+import type { BranchWithTables, OrderWithItems, WaiterCallEvent } from '@restaurantos/types';
 import {
   Badge,
   Button,
@@ -20,6 +20,7 @@ import {
 import { ThemeToggle } from '@/components/theme-toggle';
 import { apiRequest, useAuthStore } from '@/lib/api';
 import { useOrderUpdates } from '@/lib/use-order-updates';
+import { useWaiterCalls } from '@/lib/use-waiter-calls';
 
 const WAITER_STATUSES: OrderStatusValue[] = ['ready', 'served'];
 
@@ -65,6 +66,11 @@ export default function WaiterPage() {
     }
     return map;
   }, [branchesQuery.data]);
+
+  const [calls, setCalls] = useState<(WaiterCallEvent & { id: string })[]>([]);
+  useWaiterCalls(accessToken, (event) => {
+    setCalls((current) => [{ ...event, id: `${event.tableId}-${event.calledAt}` }, ...current]);
+  });
 
   const waiterOrders = useMemo(
     () =>
@@ -112,6 +118,28 @@ export default function WaiterPage() {
         </div>
       </header>
 
+      {calls.length > 0 ? (
+        <div className="mx-auto w-full max-w-5xl space-y-2 px-6 pb-4">
+          {calls.map((call) => (
+            <div
+              key={call.id}
+              className="flex items-center justify-between rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 animate-fade-in dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+            >
+              <span>
+                <strong>{tableLabelById.get(call.tableId) ?? 'A table'}</strong> needs a waiter
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCalls((current) => current.filter((item) => item.id !== call.id))}
+              >
+                Dismiss
+              </Button>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       <main className="mx-auto w-full max-w-5xl space-y-4 px-6 pb-16">
         {ordersQuery.isLoading ? (
           <div className="space-y-4">
@@ -141,6 +169,7 @@ export default function WaiterPage() {
                     <div key={item.id} className="flex justify-between">
                       <span>
                         {item.quantity}x {item.name}
+                        {item.notes ? <span className="block text-xs italic">{item.notes}</span> : null}
                       </span>
                       <span>{formatPrice(item.quantity * item.unitPriceCents)}</span>
                     </div>

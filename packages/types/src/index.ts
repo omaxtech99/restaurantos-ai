@@ -282,3 +282,12 @@ export interface PublicTableContext {
   table: PublicTableInfo;
   categories: MenuCategoryWithItems[];
 }
+
+export interface WaiterCallEvent {
+  tableId: Uuid;
+  calledAt: string;
+}
+
+export interface CallWaiterResponse {
+  nextAvailableAt: string;
+}

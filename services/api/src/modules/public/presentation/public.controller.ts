@@ -25,4 +25,9 @@ export class PublicController {
   getOrder(@Param('orderId', new ParseUUIDPipe()) orderId: string) {
     return this.publicService.getOrder(orderId);
   }
+
+  @Post('tables/:tableId/call-waiter')
+  callWaiter(@Param('tableId', new ParseUUIDPipe()) tableId: string) {
+    return this.publicService.callWaiter(tableId);
+  }
 }

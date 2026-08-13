@@ -97,6 +97,9 @@ Status legend: ✅ done · 🔜 next · ⏳ planned
 - Multi-mode payment collection (cash / card / UPI), split bills
 - Razorpay integration; order auto-flips to "paid" on successful in-app
   payment
+- **Tip option** at online-payment time — the customer, paying from their
+  own device, can add a tip before confirming payment; not available on
+  the cash path (there's no online payment step to attach it to there)
 - Cash payments: **only the waiter** can manually mark an order "paid" —
   there's no digital signal to trigger it automatically
 - Day-end / night-audit reconciliation reports
@@ -123,6 +126,9 @@ Status legend: ✅ done · 🔜 next · ⏳ planned
   cart → place order directly (this *is* how orders get created — not staff
   data entry)
 - Live order status on the customer's own screen, pushed via `order_updates`
+- **Special instructions per item** — free-text on each cart line (e.g.
+  "less spicy", "no sugar"), carried straight through to the existing
+  `OrderItem.notes` field kitchen/waiter already see
 - **Rich dish content** (the "understand unfamiliar food" feature):
   - Photo (mandatory — proven to be how people decide when they can't read
     the menu) and short prep video, uploaded to R2 by the restaurant
@@ -130,7 +136,10 @@ Status legend: ✅ done · 🔜 next · ⏳ planned
     — AI-generated from just the dish name, staff reviews/edits before
     publishing
   - Dietary/allergen filters (vegetarian, vegan, halal, gluten-free, etc.)
-- **"Call waiter"** button — maps to the `waiter_calls` event
+- **"Call waiter" / ping** button — maps to the `waiter_calls` event; rate
+  limited to once per 5 minutes per table so it can't be spammed, and the
+  next call is disabled client-side with a countdown until the cooldown
+  clears server-side
 - **Feedback/ratings** — gated to customers who actually ordered (verified,
   not open to anyone); auto-requested via WhatsApp right after payment, so
   the loop closes without staff having to ask

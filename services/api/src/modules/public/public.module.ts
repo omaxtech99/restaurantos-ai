@@ -3,9 +3,10 @@ import { PublicController } from './presentation/public.controller';
 import { PublicService } from './application/public.service';
 import { MenuModule } from '../menu/menu.module';
 import { OrderModule } from '../order/order.module';
+import { GatewayModule } from '../gateway/gateway.module';
 
 @Module({
-  imports: [MenuModule, OrderModule],
+  imports: [MenuModule, OrderModule, GatewayModule],
   controllers: [PublicController],
   providers: [PublicService],
 })

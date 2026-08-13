@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  CallWaiterResponse,
   MenuItem,
   OrderStatus,
   OrderWithItems,
@@ -23,9 +24,11 @@ import {
   DialogTitle,
   EmptyState,
   ErrorState,
+  Input,
+  Label,
   Skeleton,
 } from '@restaurantos/ui';
-import { apiRequest } from '@/lib/api';
+import { ApiClientError, apiRequest } from '@/lib/api';
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   open: 'Order received',
@@ -53,12 +56,73 @@ function sessionKey(tableId: string): string {
   return `restaurantos-order-${tableId}`;
 }
 
+function waiterCallKey(tableId: string): string {
+  return `restaurantos-waiter-call-${tableId}`;
+}
+
+function CallWaiterButton({ tableId }: { tableId: string }) {
+  const [nextAvailableAt, setNextAvailableAt] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem(waiterCallKey(tableId));
+    if (stored) setNextAvailableAt(Number(stored));
+  }, [tableId]);
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const callWaiter = useMutation({
+    mutationFn: () =>
+      apiRequest<CallWaiterResponse>(`/public/tables/${tableId}/call-waiter`, { method: 'POST' }),
+    onSuccess: (response) => {
+      const at = new Date(response.nextAvailableAt).getTime();
+      sessionStorage.setItem(waiterCallKey(tableId), String(at));
+      setNextAvailableAt(at);
+    },
+    onError: (error) => {
+      // The API enforces the same 5-minute cooldown server-side even if this
+      // client's local timer was cleared (new tab, cleared storage, etc.) —
+      // parse the seconds back out of the 409 so the button still reflects it.
+      if (error instanceof ApiClientError) {
+        const match = error.message.match(/wait (\d+)s/);
+        if (match) {
+          const at = Date.now() + Number(match[1]) * 1000;
+          sessionStorage.setItem(waiterCallKey(tableId), String(at));
+          setNextAvailableAt(at);
+        }
+      }
+    },
+  });
+
+  const remainingSeconds = nextAvailableAt ? Math.max(0, Math.ceil((nextAvailableAt - now) / 1000)) : 0;
+  const onCooldown = remainingSeconds > 0;
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={onCooldown || callWaiter.isPending}
+      onClick={() => callWaiter.mutate()}
+    >
+      {onCooldown
+        ? `Waiter notified (${remainingSeconds}s)`
+        : callWaiter.isPending
+          ? 'Calling…'
+          : 'Call waiter'}
+    </Button>
+  );
+}
+
 export default function TableOrderPage() {
   const params = useParams<{ tableId: string }>();
   const tableId = params.tableId;
   const queryClient = useQueryClient();
 
   const [cart, setCart] = useState<Record<string, number>>({});
+  const [notes, setNotes] = useState<Record<string, string>>({});
   const [cartOpen, setCartOpen] = useState(false);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
 
@@ -90,10 +154,10 @@ export default function TableOrderPage() {
         .filter(([, quantity]) => quantity > 0)
         .map(([menuItemId, quantity]) => {
           const item = allItems.find((candidate) => candidate.id === menuItemId) as MenuItem;
-          return { item, quantity };
+          return { item, quantity, notes: notes[menuItemId] ?? '' };
         })
         .filter((line) => Boolean(line.item)),
-    [cart, allItems],
+    [cart, notes, allItems],
   );
 
   const cartCount = cartLines.reduce((sum, line) => sum + line.quantity, 0);
@@ -104,13 +168,18 @@ export default function TableOrderPage() {
       apiRequest<OrderWithItems>(`/public/tables/${tableId}/orders`, {
         method: 'POST',
         body: JSON.stringify({
-          items: cartLines.map((line) => ({ menuItemId: line.item.id, quantity: line.quantity })),
+          items: cartLines.map((line) => ({
+            menuItemId: line.item.id,
+            quantity: line.quantity,
+            notes: line.notes.trim() || undefined,
+          })),
         }),
       }),
     onSuccess: (order) => {
       sessionStorage.setItem(sessionKey(tableId), order.id);
       setActiveOrderId(order.id);
       setCart({});
+      setNotes({});
       setCartOpen(false);
       queryClient.invalidateQueries({ queryKey: ['public-order', order.id] });
     },
@@ -160,9 +229,12 @@ export default function TableOrderPage() {
   if (activeOrderId) {
     return (
       <div className="mx-auto min-h-screen max-w-md space-y-6 px-5 py-10">
-        <div>
-          <p className="text-sm text-muted-foreground">{table.restaurantName}</p>
-          <h1 className="font-display text-2xl font-semibold tracking-tight">{table.label}</h1>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm text-muted-foreground">{table.restaurantName}</p>
+            <h1 className="font-display text-2xl font-semibold tracking-tight">{table.label}</h1>
+          </div>
+          <CallWaiterButton tableId={tableId} />
         </div>
 
         {orderQuery.isLoading || !order ? (
@@ -184,6 +256,9 @@ export default function TableOrderPage() {
                   <div key={item.id} className="flex justify-between text-muted-foreground">
                     <span>
                       {item.quantity}x {item.name}
+                      {item.notes ? (
+                        <span className="block text-xs italic">{item.notes}</span>
+                      ) : null}
                     </span>
                     <span>{formatPrice(item.quantity * item.unitPriceCents)}</span>
                   </div>
@@ -210,9 +285,12 @@ export default function TableOrderPage() {
 
   return (
     <div className="mx-auto min-h-screen max-w-md pb-28">
-      <header className="px-5 pt-10 pb-6">
-        <p className="text-sm text-muted-foreground">{table.restaurantName}</p>
-        <h1 className="font-display text-2xl font-semibold tracking-tight">{table.label}</h1>
+      <header className="flex items-start justify-between gap-3 px-5 pt-10 pb-6">
+        <div>
+          <p className="text-sm text-muted-foreground">{table.restaurantName}</p>
+          <h1 className="font-display text-2xl font-semibold tracking-tight">{table.label}</h1>
+        </div>
+        <CallWaiterButton tableId={tableId} />
       </header>
 
       <main className="space-y-6 px-5">
@@ -296,25 +374,38 @@ export default function TableOrderPage() {
             <DialogTitle>Your order</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-3">
               {cartLines.map((line) => (
-                <div
-                  key={line.item.id}
-                  className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm"
-                >
-                  <span>
-                    {line.quantity}x {line.item.name}
-                  </span>
-                  <div className="flex items-center gap-3">
-                    <span>{formatPrice(line.quantity * line.item.priceCents)}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeFromCart(line.item.id)}
-                    >
-                      Remove
-                    </Button>
+                <div key={line.item.id} className="space-y-1.5 rounded-lg border px-3 py-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span>
+                      {line.quantity}x {line.item.name}
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <span>{formatPrice(line.quantity * line.item.priceCents)}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFromCart(line.item.id)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`notes-${line.item.id}`} className="text-xs text-muted-foreground">
+                      Special instructions (optional)
+                    </Label>
+                    <Input
+                      id={`notes-${line.item.id}`}
+                      placeholder="e.g. less spicy, no sugar"
+                      value={line.notes}
+                      onChange={(event) =>
+                        setNotes((current) => ({ ...current, [line.item.id]: event.target.value }))
+                      }
+                      className="h-8 text-sm"
+                    />
                   </div>
                 </div>
               ))}
