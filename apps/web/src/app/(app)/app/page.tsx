@@ -1,98 +1,123 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@restaurantos/ui';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { useQuery } from '@tanstack/react-query';
+import type { OrderWithItems, WaitlistEntry } from '@restaurantos/types';
+import { PERMISSIONS } from '@restaurantos/shared';
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Skeleton } from '@restaurantos/ui';
 import { apiRequest, useAuthStore } from '@/lib/api';
 
-export default function AppShellPage() {
-  const router = useRouter();
+const OPEN_STATUSES = ['open', 'in_kitchen', 'ready'];
+
+const QUICK_LINKS: { href: string; label: string; permission?: string }[] = [
+  { href: '/orders', label: 'Orders', permission: PERMISSIONS.ORDER_MANAGE },
+  { href: '/kitchen', label: 'Kitchen', permission: PERMISSIONS.ORDER_KITCHEN },
+  { href: '/waiter', label: 'Waiter', permission: PERMISSIONS.ORDER_SERVE },
+  { href: '/menu', label: 'Menu', permission: PERMISSIONS.MENU_MANAGE },
+  { href: '/branches', label: 'Branches', permission: PERMISSIONS.BRANCH_MANAGE },
+  { href: '/waitlist', label: 'Waitlist', permission: PERMISSIONS.WAITLIST_READ },
+  { href: '/staff', label: 'Staff', permission: PERMISSIONS.STAFF_MANAGE },
+];
+
+export default function DashboardPage() {
   const user = useAuthStore((state) => state.user);
   const accessToken = useAuthStore((state) => state.accessToken);
-  const hasHydrated = useAuthStore((state) => state.hasHydrated);
-  const clearSession = useAuthStore((state) => state.clearSession);
 
-  useEffect(() => {
-    if (hasHydrated && !accessToken) {
-      router.replace('/login');
-    }
-  }, [hasHydrated, accessToken, router]);
+  const permissions = new Set(user?.permissions ?? []);
+  const canReadOrders = permissions.has(PERMISSIONS.ORDER_READ);
+  const canReadWaitlist = permissions.has(PERMISSIONS.WAITLIST_READ);
 
-  if (!hasHydrated || !accessToken || !user) {
+  const ordersQuery = useQuery({
+    queryKey: ['dashboard-orders'],
+    queryFn: () => apiRequest<OrderWithItems[]>('/orders', { auth: true }),
+    enabled: Boolean(accessToken) && canReadOrders,
+    refetchInterval: 30_000,
+  });
+
+  const waitlistQuery = useQuery({
+    queryKey: ['dashboard-waitlist'],
+    queryFn: () => apiRequest<WaitlistEntry[]>('/waitlist', { auth: true }),
+    enabled: Boolean(accessToken) && canReadWaitlist,
+    refetchInterval: 30_000,
+  });
+
+  if (!user) {
     return null;
   }
 
+  const orders = ordersQuery.data ?? [];
+  const openOrdersCount = orders.filter((order) => OPEN_STATUSES.includes(order.status)).length;
+  const readyCount = orders.filter((order) => order.status === 'ready').length;
+  const waitlistCount = waitlistQuery.data?.length ?? 0;
+  const links = QUICK_LINKS.filter((link) => !link.permission || permissions.has(link.permission));
+
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.06),_transparent_40%),hsl(var(--background))]">
-      <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-8">
-        <div>
-          <p className="font-display text-2xl font-semibold tracking-tight">RestaurantOS</p>
-          <p className="text-sm text-muted-foreground">Foundation workspace shell</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
-          <Button variant="outline" asChild>
-            <Link href="/menu">Menu</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/branches">Branches</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/orders">Orders</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/kitchen">Kitchen</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/waiter">Waiter</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/waitlist">Waitlist</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/staff">Staff</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/switch-user">Switch user</Link>
-          </Button>
-          <Button
-            variant="outline"
-            onClick={async () => {
-              try {
-                await apiRequest('/auth/logout', { method: 'POST', auth: true });
-              } finally {
-                clearSession();
-                router.replace('/login');
-              }
-            }}
-          >
-            Sign out
-          </Button>
-        </div>
-      </header>
-      <main className="mx-auto w-full max-w-5xl px-6 pb-16">
-        <Card className="animate-fade-in">
+    <div className="mx-auto w-full max-w-5xl space-y-8 px-6 py-10">
+      <div>
+        <h1 className="font-display text-2xl font-semibold tracking-tight">
+          Welcome back, {user.firstName}
+        </h1>
+        <p className="text-sm text-muted-foreground">Here&apos;s what&apos;s happening right now.</p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {canReadOrders ? (
+          <>
+            <Card className="animate-fade-in">
+              <CardHeader className="pb-2">
+                <CardDescription>Open orders</CardDescription>
+                {ordersQuery.isLoading ? (
+                  <Skeleton className="h-9 w-16" />
+                ) : (
+                  <CardTitle className="text-3xl">{openOrdersCount}</CardTitle>
+                )}
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">
+                Across open, in-kitchen, and ready
+              </CardContent>
+            </Card>
+            <Card className="animate-fade-in">
+              <CardHeader className="pb-2">
+                <CardDescription>Ready to serve</CardDescription>
+                {ordersQuery.isLoading ? (
+                  <Skeleton className="h-9 w-16" />
+                ) : (
+                  <CardTitle className="text-3xl">{readyCount}</CardTitle>
+                )}
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">Waiting on a waiter</CardContent>
+            </Card>
+          </>
+        ) : null}
+        {canReadWaitlist ? (
+          <Card className="animate-fade-in">
+            <CardHeader className="pb-2">
+              <CardDescription>Active waitlist</CardDescription>
+              {waitlistQuery.isLoading ? (
+                <Skeleton className="h-9 w-16" />
+              ) : (
+                <CardTitle className="text-3xl">{waitlistCount}</CardTitle>
+              )}
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">Walk-ins waiting for a table</CardContent>
+          </Card>
+        ) : null}
+      </div>
+
+      {links.length > 0 ? (
+        <Card>
           <CardHeader>
-            <CardTitle>
-              Hello, {user.firstName} {user.lastName}
-            </CardTitle>
-            <CardDescription>
-              Authentication, tenant context, and RBAC are ready. Product modules will plug into
-              this shell later.
-            </CardDescription>
+            <CardTitle className="text-base">Quick links</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>Email: {user.email ?? '— (PIN login)'}</p>
-            <p>Tenant: {user.tenantId}</p>
-            <p>Roles: {user.roles.join(', ') || 'none'}</p>
-            <Link href="/login" className="inline-block pt-2 text-foreground hover:underline">
-              Auth routes
-            </Link>
+          <CardContent className="flex flex-wrap gap-2">
+            {links.map((link) => (
+              <Button key={link.href} variant="outline" asChild>
+                <Link href={link.href}>{link.label}</Link>
+              </Button>
+            ))}
           </CardContent>
         </Card>
-      </main>
+      ) : null}
     </div>
   );
 }

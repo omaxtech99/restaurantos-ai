@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ORDER_STATUS_TRANSITIONS, type OrderStatusValue } from '@restaurantos/shared';
 import type {
@@ -30,7 +28,6 @@ import {
   Label,
   Skeleton,
 } from '@restaurantos/ui';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { apiRequest, useAuthStore } from '@/lib/api';
 import { useOrderUpdates } from '@/lib/use-order-updates';
 
@@ -183,16 +180,9 @@ function CartList({ cart, onRemove }: { cart: CartLine[]; onRemove: (index: numb
 }
 
 export default function OrdersPage() {
-  const router = useRouter();
   const accessToken = useAuthStore((state) => state.accessToken);
   const hasHydrated = useAuthStore((state) => state.hasHydrated);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (hasHydrated && !accessToken) {
-      router.replace('/login');
-    }
-  }, [hasHydrated, accessToken, router]);
 
   const branchesQuery = useQuery({
     queryKey: ['branches'],
@@ -284,19 +274,12 @@ export default function OrdersPage() {
   const orders = ordersQuery.data ?? [];
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.06),_transparent_40%),hsl(var(--background))]">
-      <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-8">
+    <div className="mx-auto w-full max-w-5xl space-y-4 px-6 py-10">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link
-            href="/app"
-            className="font-display text-2xl font-semibold tracking-tight hover:underline"
-          >
-            RestaurantOS
-          </Link>
-          <p className="text-sm text-muted-foreground">Orders</p>
+          <h1 className="font-display text-2xl font-semibold tracking-tight">Orders</h1>
         </div>
         <div className="flex items-center gap-3">
-          <ThemeToggle />
           <Dialog open={newOrderOpen} onOpenChange={setNewOrderOpen}>
             <DialogTrigger asChild>
               <Button disabled={tables.length === 0}>New order</Button>
@@ -354,9 +337,9 @@ export default function OrdersPage() {
             </DialogContent>
           </Dialog>
         </div>
-      </header>
+      </div>
 
-      <main className="mx-auto w-full max-w-5xl space-y-4 px-6 pb-16">
+      <div className="space-y-4">
         {ordersQuery.isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-32 w-full" />
@@ -412,7 +395,7 @@ export default function OrdersPage() {
             </Card>
           ))
         )}
-      </main>
+      </div>
     </div>
   );
 }

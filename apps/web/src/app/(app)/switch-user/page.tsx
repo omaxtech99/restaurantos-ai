@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { AuthSessionResponse, StaffMember } from '@restaurantos/types';
@@ -21,7 +20,6 @@ import {
   Label,
   Skeleton,
 } from '@restaurantos/ui';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { apiRequest, useAuthStore } from '@/lib/api';
 
 const ROLE_LABEL: Record<string, string> = {
@@ -34,12 +32,6 @@ export default function SwitchUserPage() {
   const accessToken = useAuthStore((state) => state.accessToken);
   const hasHydrated = useAuthStore((state) => state.hasHydrated);
   const setSession = useAuthStore((state) => state.setSession);
-
-  useEffect(() => {
-    if (hasHydrated && !accessToken) {
-      router.replace('/login');
-    }
-  }, [hasHydrated, accessToken, router]);
 
   const staffQuery = useQuery({
     queryKey: ['staff'],
@@ -75,21 +67,14 @@ export default function SwitchUserPage() {
   const staff = staffQuery.data ?? [];
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.06),_transparent_40%),hsl(var(--background))]">
-      <header className="mx-auto flex w-full max-w-3xl items-center justify-between px-6 py-8">
-        <div>
-          <Link
-            href="/app"
-            className="font-display text-2xl font-semibold tracking-tight hover:underline"
-          >
-            RestaurantOS
-          </Link>
-          <p className="text-sm text-muted-foreground">Switch user — hand off this device</p>
-        </div>
-        <ThemeToggle />
-      </header>
+    <div className="mx-auto w-full max-w-3xl space-y-4 px-6 py-10">
+      <div>
+        <h1 className="font-display text-2xl font-semibold tracking-tight">
+          Switch user — hand off this device
+        </h1>
+      </div>
 
-      <main className="mx-auto w-full max-w-3xl space-y-4 px-6 pb-16">
+      <div className="space-y-4">
         {staffQuery.isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-20 w-full" />
@@ -128,7 +113,7 @@ export default function SwitchUserPage() {
             </Card>
           ))
         )}
-      </main>
+      </div>
 
       <Dialog
         open={activeStaff !== null}

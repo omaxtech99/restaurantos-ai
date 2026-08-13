@@ -241,6 +241,43 @@ work, not a gap in what shipped.
     degrade gracefully when not configured, same posture as WhatsApp/
     Razorpay — `menu_items` gains `tasteProfile`/`nutritionInfo` (JSON),
     `dietaryTags` (string array), `photoUrl`, `videoUrl`.
+11. **App shell, real dashboard, and standalone staff login** — cross-cutting
+    UX work, not a product pillar, but a real gap: `/app` was still
+    foundation-phase debug text ("Hello, {name}… Foundation workspace
+    shell") with no navigation, and every staff page copy-pasted its own
+    header (logo, `ThemeToggle`, the `hasHydrated`-gated redirect). Added a
+    persistent, role-aware sidebar (`apps/web/src/components/app-shell.tsx`,
+    wired in via `apps/web/src/app/(app)/layout.tsx`) that centralizes that
+    redirect guard once and filters nav items by the logged-in user's
+    `permissions` array — Orders only shows for `order:manage`, Kitchen
+    only for `order:kitchen`, etc., so a waiter's nav never lists a screen
+    they'd 403 on. `/app` is now a real dashboard: open-orders /
+    ready-to-serve / active-waitlist counts, each gated behind the matching
+    read permission so a waiter's dashboard doesn't even attempt a
+    `waitlist:read` call it lacks. Also added standalone staff PIN login
+    (`/staff-login`, `GET/POST /auth/staff-login`) — the original
+    `pin-login` required an *existing* JWT session (`/switch-user`'s "hand
+    off this device" model), so a waiter could never sign in on their own
+    fresh device without the owner unlocking it first. The new flow
+    resolves the tenant from its `slug` (now returned as `tenantSlug` on
+    `AuthUser`, shown to the owner on `/staff` to share with staff) instead
+    of trusting a caller's JWT, then reuses the exact same PIN-verification
+    path as the original (refactored into a shared private
+    `performPinLogin` in `auth.service.ts`). Because this endpoint is
+    genuinely public — no prior session gates PIN guesses — it gets its own
+    Redis-backed lockout (`staff-login-attempts:{tenantId}:{userId}`, 8
+    attempts / 15 min, same `SET`/`INCR`+`EXPIRE` pattern as the
+    waiter-call cooldown) that the original session-gated `pinLogin` never
+    needed. Verified end-to-end with Playwright: owner signup → dashboard
+    KPIs render (no debug text) → sidebar shows every item → create a
+    waiter and a kitchen staff member → sign out → **fresh browser
+    context** standalone login as each role → confirmed the sidebar and
+    dashboard are narrowed per role → confirmed a waiter's real token still
+    gets 403 from the API on `POST /orders` (not just a hidden button) →
+    wrong-PIN-then-right-PIN → bogus restaurant code handled gracefully;
+    plus curl checks that the lockout actually trips on the 9th attempt and
+    that a valid `userId`+PIN from one tenant is rejected against a
+    different tenant's slug.
 
 Not yet built: everything else in `docs/12_PRODUCT_SCOPE.md`'s build order
 — feedback/ratings is next.
@@ -340,8 +377,13 @@ branches without checking first.
   fires before hydration completes on a hard reload, incorrectly bouncing a
   logged-in user to `/login`. Fixed by adding `hasHydrated` state (set via
   `onRehydrateStorage`) to `useAuthStore` and gating every protected page's
-  guard on `hasHydrated && !accessToken`, not just `!accessToken`. This
-  pattern must be copied into every new protected page.
+  guard on `hasHydrated && !accessToken`, not just `!accessToken`. Since the
+  App shell slice (see "What's built so far" above), this guard lives once
+  in `apps/web/src/components/app-shell.tsx` (used by the `(app)` route
+  group's `layout.tsx`) instead of being copied into every page — new
+  protected pages under `(app)/` get it for free; only a genuinely new
+  protected *route group* (outside `(app)`) would need the pattern
+  copied again.
 - **`@types/node` phantom dependency.** `packages/config` and
   `packages/database` used `process.env` / `NodeJS.ProcessEnv` without
   declaring `@types/node` themselves, relying on hoisting from other

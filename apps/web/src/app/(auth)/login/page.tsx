@@ -92,6 +92,11 @@ export default function LoginPage() {
             Create account
           </Link>
         </div>
+        <div className="mt-3 text-center text-sm text-muted-foreground">
+          <Link href="/staff-login" className="hover:text-foreground">
+            Staff? Sign in with your PIN instead
+          </Link>
+        </div>
       </CardContent>
     </Card>
   );

@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -35,23 +33,15 @@ import {
   TableHeader,
   TableRow,
 } from '@restaurantos/ui';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { apiRequest, useAuthStore } from '@/lib/api';
 
 type BranchForm = z.infer<typeof createBranchSchema>;
 type TableForm = z.infer<typeof createTableSchema>;
 
 export default function BranchesPage() {
-  const router = useRouter();
   const accessToken = useAuthStore((state) => state.accessToken);
   const hasHydrated = useAuthStore((state) => state.hasHydrated);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (hasHydrated && !accessToken) {
-      router.replace('/login');
-    }
-  }, [hasHydrated, accessToken, router]);
 
   const branchesQuery = useQuery({
     queryKey: ['branches'],
@@ -135,19 +125,12 @@ export default function BranchesPage() {
   const branches = branchesQuery.data ?? [];
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.06),_transparent_40%),hsl(var(--background))]">
-      <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-8">
+    <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link
-            href="/app"
-            className="font-display text-2xl font-semibold tracking-tight hover:underline"
-          >
-            RestaurantOS
-          </Link>
-          <p className="text-sm text-muted-foreground">Branches &amp; tables</p>
+          <h1 className="font-display text-2xl font-semibold tracking-tight">Branches &amp; tables</h1>
         </div>
         <div className="flex items-center gap-3">
-          <ThemeToggle />
           <Dialog open={branchDialogOpen} onOpenChange={setBranchDialogOpen}>
             <DialogTrigger asChild>
               <Button>New branch</Button>
@@ -188,9 +171,9 @@ export default function BranchesPage() {
             </DialogContent>
           </Dialog>
         </div>
-      </header>
+      </div>
 
-      <main className="mx-auto w-full max-w-5xl space-y-6 px-6 pb-16">
+      <div className="space-y-6">
         {branchesQuery.isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-40 w-full" />
@@ -319,7 +302,7 @@ export default function BranchesPage() {
             </Card>
           ))
         )}
-      </main>
+      </div>
 
       <Dialog
         open={qrTable !== null}

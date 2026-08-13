@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { OrderStatusValue } from '@restaurantos/shared';
 import type { BranchWithTables, OrderWithItems } from '@restaurantos/types';
@@ -17,7 +15,6 @@ import {
   EmptyState,
   Skeleton,
 } from '@restaurantos/ui';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { apiRequest, useAuthStore } from '@/lib/api';
 import { useOrderUpdates } from '@/lib/use-order-updates';
 
@@ -32,16 +29,9 @@ function formatElapsed(createdAt: string, now: number): string {
 }
 
 export default function KitchenPage() {
-  const router = useRouter();
   const accessToken = useAuthStore((state) => state.accessToken);
   const hasHydrated = useAuthStore((state) => state.hasHydrated);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (hasHydrated && !accessToken) {
-      router.replace('/login');
-    }
-  }, [hasHydrated, accessToken, router]);
 
   const branchesQuery = useQuery({
     queryKey: ['branches'],
@@ -99,26 +89,12 @@ export default function KitchenPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.06),_transparent_40%),hsl(var(--background))]">
-      <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-8">
-        <div>
-          <Link
-            href="/app"
-            className="font-display text-2xl font-semibold tracking-tight hover:underline"
-          >
-            RestaurantOS
-          </Link>
-          <p className="text-sm text-muted-foreground">Kitchen — live orders</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
-          <Button variant="outline" asChild>
-            <Link href="/orders">All orders</Link>
-          </Button>
-        </div>
-      </header>
+    <div className="mx-auto w-full max-w-5xl space-y-4 px-6 py-10">
+      <div>
+        <h1 className="font-display text-2xl font-semibold tracking-tight">Kitchen — live orders</h1>
+      </div>
 
-      <main className="mx-auto w-full max-w-5xl space-y-4 px-6 pb-16">
+      <div className="space-y-4">
         {ordersQuery.isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-32 w-full" />
@@ -171,7 +147,7 @@ export default function KitchenPage() {
             </Card>
           ))
         )}
-      </main>
+      </div>
     </div>
   );
 }

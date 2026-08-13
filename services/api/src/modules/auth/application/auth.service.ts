@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import type {
@@ -12,6 +13,8 @@ import type {
   RefreshRequest,
   ResetPasswordRequest,
   SignupRequest,
+  StaffLoginOptionsResponse,
+  StaffLoginRequest,
   VerifyEmailRequest,
 } from '@restaurantos/types';
 import { PrismaService } from '../../database/prisma.service';
@@ -19,6 +22,7 @@ import { TenantService } from '../../tenant/application/tenant.service';
 import { RbacService } from '../../rbac/application/rbac.service';
 import { AuditService } from '../../audit/application/audit.service';
 import { NotificationService } from '../../notification/application/notification.service';
+import { RedisService } from '../../redis/redis.service';
 import { PasswordService } from './password.service';
 import { TokenService } from './token.service';
 import { SessionService } from './session.service';
@@ -28,6 +32,10 @@ interface RequestMeta {
   ipAddress?: string;
   userAgent?: string;
 }
+
+/** Standalone staff login has no prior device session, so it's a public endpoint — lock it down against PIN brute-forcing. */
+const STAFF_LOGIN_MAX_ATTEMPTS = 8;
+const STAFF_LOGIN_LOCKOUT_WINDOW_SECONDS = 15 * 60;
 
 @Injectable()
 export class AuthService {
@@ -41,6 +49,7 @@ export class AuthService {
     private readonly auditService: AuditService,
     private readonly notificationService: NotificationService,
     private readonly config: AppConfigService,
+    private readonly redisService: RedisService,
   ) {}
 
   async signup(input: SignupRequest, meta: RequestMeta = {}): Promise<AuthSessionResponse> {
@@ -161,8 +170,77 @@ export class AuthService {
     input: PinLoginRequest,
     meta: RequestMeta = {},
   ): Promise<AuthSessionResponse> {
+    return this.performPinLogin(callerTenantId, input, meta);
+  }
+
+  /**
+   * Lets a fresh device with no prior session sign in directly as a PIN-only
+   * staff account — the waiter/kitchen equivalent of email+password login.
+   * The restaurant's tenant slug (shown to the owner on the Staff page)
+   * stands in for "which tenant" the way email normally does; it's not
+   * secret, so brute-force protection lives on the PIN attempt itself, via
+   * a Redis-backed lockout keyed by tenant+user, mirroring the cooldown
+   * pattern already used for `PublicService.callWaiter`.
+   */
+  async staffLogin(input: StaffLoginRequest, meta: RequestMeta = {}): Promise<AuthSessionResponse> {
+    const tenant = await this.prismaService.prisma.tenant.findFirst({
+      where: { slug: input.tenantSlug, deletedAt: null },
+    });
+
+    if (!tenant) {
+      throw new UnauthorizedException('Invalid PIN');
+    }
+
+    await this.redisService.connect();
+    const attemptsKey = `staff-login-attempts:${tenant.id}:${input.userId}`;
+    const attempts = await this.redisService.redis.incr(attemptsKey);
+    if (attempts === 1) {
+      await this.redisService.redis.expire(attemptsKey, STAFF_LOGIN_LOCKOUT_WINDOW_SECONDS);
+    }
+    if (attempts > STAFF_LOGIN_MAX_ATTEMPTS) {
+      throw new UnauthorizedException('Too many attempts — wait a few minutes and try again');
+    }
+
+    const sessionResponse = await this.performPinLogin(tenant.id, input, meta);
+    await this.redisService.redis.del(attemptsKey);
+    return sessionResponse;
+  }
+
+  /** Public staff-picker for the standalone login page — names only, scoped strictly by the resolved tenant. */
+  async getStaffLoginOptions(tenantSlug: string): Promise<StaffLoginOptionsResponse> {
+    const tenant = await this.prismaService.prisma.tenant.findFirst({
+      where: { slug: tenantSlug, deletedAt: null },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Restaurant not found — check the code and try again');
+    }
+
+    const staff = await this.prismaService.prisma.user.findMany({
+      where: { tenantId: tenant.id, deletedAt: null, pinHash: { not: null } },
+      include: { roles: { include: { role: true } } },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return {
+      tenantName: tenant.name,
+      staff: staff.map((user) => ({
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        roles: user.roles.map((userRole) => userRole.role.name),
+        createdAt: user.createdAt.toISOString(),
+      })),
+    };
+  }
+
+  private async performPinLogin(
+    tenantId: string,
+    input: PinLoginRequest,
+    meta: RequestMeta = {},
+  ): Promise<AuthSessionResponse> {
     const user = await this.prismaService.prisma.user.findFirst({
-      where: { id: input.userId, tenantId: callerTenantId, deletedAt: null },
+      where: { id: input.userId, tenantId, deletedAt: null },
     });
 
     if (!user || !user.pinHash) {
@@ -173,7 +251,7 @@ export class AuthService {
     if (!valid) {
       await this.auditService.write({
         action: 'auth.failed_pin_login',
-        tenantId: callerTenantId,
+        tenantId,
         userId: user.id,
         ipAddress: meta.ipAddress,
         userAgent: meta.userAgent,
@@ -382,6 +460,7 @@ export class AuthService {
         id: userId,
         deletedAt: null,
       },
+      include: { tenant: true },
     });
 
     if (!user) {
@@ -396,6 +475,7 @@ export class AuthService {
       firstName: user.firstName,
       lastName: user.lastName,
       tenantId: user.tenantId,
+      tenantSlug: user.tenant.slug,
       emailVerifiedAt: user.emailVerifiedAt?.toISOString() ?? null,
       roles: access.roles,
       permissions: access.permissions,

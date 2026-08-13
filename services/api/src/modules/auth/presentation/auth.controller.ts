@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   Req,
   UseGuards,
@@ -16,6 +17,7 @@ import {
   RefreshDto,
   ResetPasswordDto,
   SignupDto,
+  StaffLoginDto,
   VerifyEmailDto,
 } from './auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -46,6 +48,16 @@ export class AuthController {
   @Post('pin-login')
   pinLogin(@Body() body: PinLoginDto, @Req() req: AuthenticatedRequest) {
     return this.authService.pinLogin(req.user!.tenantId, body, this.meta(req));
+  }
+
+  @Get('staff-login/:tenantSlug')
+  staffLoginOptions(@Param('tenantSlug') tenantSlug: string) {
+    return this.authService.getStaffLoginOptions(tenantSlug);
+  }
+
+  @Post('staff-login')
+  staffLogin(@Body() body: StaffLoginDto, @Req() req: Request) {
+    return this.authService.staffLogin(body, this.meta(req));
   }
 
   @Post('forgot-password')

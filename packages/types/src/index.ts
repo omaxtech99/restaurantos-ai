@@ -48,6 +48,8 @@ export interface AuthUser {
   firstName: string;
   lastName: string;
   tenantId: Uuid;
+  /** The tenant's unique slug — shown to the owner so they can share it with staff for standalone PIN login. */
+  tenantSlug: string;
   emailVerifiedAt: string | null;
   roles: string[];
   permissions: string[];
@@ -240,6 +242,17 @@ export interface StaffMember {
   lastName: string;
   roles: string[];
   createdAt: string;
+}
+
+export interface StaffLoginOptionsResponse {
+  tenantName: string;
+  staff: StaffMember[];
+}
+
+export interface StaffLoginRequest {
+  tenantSlug: string;
+  userId: Uuid;
+  pin: string;
 }
 
 export interface PinLoginRequest {

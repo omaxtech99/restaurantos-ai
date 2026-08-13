@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -28,7 +26,6 @@ import {
   Label,
   Skeleton,
 } from '@restaurantos/ui';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { apiRequest, useAuthStore } from '@/lib/api';
 import { useWaitlistUpdates } from '@/lib/use-waitlist-updates';
 
@@ -43,16 +40,9 @@ function formatWaitTime(createdAt: string, now: number): string {
 }
 
 export default function WaitlistPage() {
-  const router = useRouter();
   const accessToken = useAuthStore((state) => state.accessToken);
   const hasHydrated = useAuthStore((state) => state.hasHydrated);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (hasHydrated && !accessToken) {
-      router.replace('/login');
-    }
-  }, [hasHydrated, accessToken, router]);
 
   const branchesQuery = useQuery({
     queryKey: ['branches'],
@@ -126,19 +116,12 @@ export default function WaitlistPage() {
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.06),_transparent_40%),hsl(var(--background))]">
-      <header className="mx-auto flex w-full max-w-3xl items-center justify-between px-6 py-8">
+    <div className="mx-auto w-full max-w-3xl space-y-4 px-6 py-10">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link
-            href="/app"
-            className="font-display text-2xl font-semibold tracking-tight hover:underline"
-          >
-            RestaurantOS
-          </Link>
-          <p className="text-sm text-muted-foreground">Waitlist — walk-in queue</p>
+          <h1 className="font-display text-2xl font-semibold tracking-tight">Waitlist — walk-in queue</h1>
         </div>
         <div className="flex items-center gap-3">
-          <ThemeToggle />
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button disabled={branches.length === 0}>Add walk-in</Button>
@@ -206,9 +189,9 @@ export default function WaitlistPage() {
             </DialogContent>
           </Dialog>
         </div>
-      </header>
+      </div>
 
-      <main className="mx-auto w-full max-w-3xl space-y-4 px-6 pb-16">
+      <div className="space-y-4">
         {waitlistQuery.isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-24 w-full" />
@@ -256,7 +239,7 @@ export default function WaitlistPage() {
             </Card>
           ))
         )}
-      </main>
+      </div>
     </div>
   );
 }

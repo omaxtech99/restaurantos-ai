@@ -1,8 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -34,7 +32,6 @@ import {
   TableHeader,
   TableRow,
 } from '@restaurantos/ui';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { apiRequest, useAuthStore } from '@/lib/api';
 import { DishContentDialog } from './dish-content-dialog';
 
@@ -55,16 +52,9 @@ function formatPrice(cents: number): string {
 }
 
 export default function MenuPage() {
-  const router = useRouter();
   const accessToken = useAuthStore((state) => state.accessToken);
   const hasHydrated = useAuthStore((state) => state.hasHydrated);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (hasHydrated && !accessToken) {
-      router.replace('/login');
-    }
-  }, [hasHydrated, accessToken, router]);
 
   const menuQuery = useQuery({
     queryKey: ['menu'],
@@ -153,19 +143,12 @@ export default function MenuPage() {
     .find((item) => item.id === contentDialogItemId);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.06),_transparent_40%),hsl(var(--background))]">
-      <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-8">
+    <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link
-            href="/app"
-            className="font-display text-2xl font-semibold tracking-tight hover:underline"
-          >
-            RestaurantOS
-          </Link>
-          <p className="text-sm text-muted-foreground">Menu</p>
+          <h1 className="font-display text-2xl font-semibold tracking-tight">Menu</h1>
         </div>
         <div className="flex items-center gap-3">
-          <ThemeToggle />
           <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
             <DialogTrigger asChild>
               <Button>New category</Button>
@@ -208,9 +191,9 @@ export default function MenuPage() {
             </DialogContent>
           </Dialog>
         </div>
-      </header>
+      </div>
 
-      <main className="mx-auto w-full max-w-5xl space-y-6 px-6 pb-16">
+      <div className="space-y-6">
         {menuQuery.isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-40 w-full" />
@@ -371,7 +354,7 @@ export default function MenuPage() {
             </Card>
           ))
         )}
-      </main>
+      </div>
 
       {contentDialogItem ? (
         <DishContentDialog item={contentDialogItem} onClose={() => setContentDialogItemId(null)} />

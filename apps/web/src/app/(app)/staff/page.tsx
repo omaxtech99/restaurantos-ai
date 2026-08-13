@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,6 +12,7 @@ import {
   Badge,
   Button,
   Card,
+  CardContent,
   CardHeader,
   CardTitle,
   Dialog,
@@ -26,7 +26,6 @@ import {
   Label,
   Skeleton,
 } from '@restaurantos/ui';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { apiRequest, useAuthStore } from '@/lib/api';
 
 type StaffForm = z.infer<typeof createStaffSchema>;
@@ -37,16 +36,10 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 export default function StaffPage() {
-  const router = useRouter();
   const accessToken = useAuthStore((state) => state.accessToken);
   const hasHydrated = useAuthStore((state) => state.hasHydrated);
+  const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (hasHydrated && !accessToken) {
-      router.replace('/login');
-    }
-  }, [hasHydrated, accessToken, router]);
 
   const staffQuery = useQuery({
     queryKey: ['staff'],
@@ -82,19 +75,14 @@ export default function StaffPage() {
   const staff = staffQuery.data ?? [];
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.06),_transparent_40%),hsl(var(--background))]">
-      <header className="mx-auto flex w-full max-w-3xl items-center justify-between px-6 py-8">
+    <div className="mx-auto w-full max-w-3xl space-y-4 px-6 py-10">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link
-            href="/app"
-            className="font-display text-2xl font-semibold tracking-tight hover:underline"
-          >
-            RestaurantOS
-          </Link>
-          <p className="text-sm text-muted-foreground">Staff — waiter &amp; kitchen PIN logins</p>
+          <h1 className="font-display text-2xl font-semibold tracking-tight">
+            Staff — waiter &amp; kitchen PIN logins
+          </h1>
         </div>
         <div className="flex items-center gap-3">
-          <ThemeToggle />
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button>Add staff</Button>
@@ -157,9 +145,29 @@ export default function StaffPage() {
             </DialogContent>
           </Dialog>
         </div>
-      </header>
+      </div>
 
-      <main className="mx-auto w-full max-w-3xl space-y-4 px-6 pb-16">
+      {user?.tenantSlug ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Standalone PIN login</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            <p>
+              Staff can sign in directly on their own device at{' '}
+              <Link href={`/staff-login?code=${user.tenantSlug}`} className="text-foreground hover:underline">
+                /staff-login
+              </Link>{' '}
+              using this restaurant code — no need to unlock the device first.
+            </p>
+            <p className="rounded-lg border bg-muted px-3 py-2 font-mono text-base text-foreground">
+              {user.tenantSlug}
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      <div className="space-y-4">
         {staffQuery.isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-20 w-full" />
@@ -198,7 +206,7 @@ export default function StaffPage() {
             </Card>
           ))
         )}
-      </main>
+      </div>
     </div>
   );
 }
