@@ -22,6 +22,7 @@ export const apiEnvSchema = z.object({
   EMAIL_FROM: z.string().min(1),
   R2_BUCKET: optionalString,
   RAZORPAY_KEY_ID: optionalString,
+  RAZORPAY_KEY_SECRET: optionalString,
   OPENAI_API_KEY: optionalString,
 });
 

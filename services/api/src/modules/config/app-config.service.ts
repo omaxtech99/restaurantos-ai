@@ -60,4 +60,16 @@ export class AppConfigService {
   get emailFrom(): string {
     return this.env.EMAIL_FROM;
   }
+
+  get razorpayKeyId(): string | undefined {
+    return this.env.RAZORPAY_KEY_ID;
+  }
+
+  get razorpayKeySecret(): string | undefined {
+    return this.env.RAZORPAY_KEY_SECRET;
+  }
+
+  get razorpayConfigured(): boolean {
+    return Boolean(this.env.RAZORPAY_KEY_ID && this.env.RAZORPAY_KEY_SECRET);
+  }
 }

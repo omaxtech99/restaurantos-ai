@@ -35,6 +35,8 @@ interface OrderRecord {
   tableId: string;
   status: string;
   totalCents: number;
+  tipCents: number;
+  paymentMethod: string | null;
   createdAt: Date;
   updatedAt: Date;
   items: OrderItemRecord[];
@@ -63,6 +65,8 @@ function toOrderWithItems(record: OrderRecord): OrderWithItems {
     tableId: record.tableId,
     status: record.status as OrderWithItems['status'],
     totalCents: record.totalCents,
+    tipCents: record.tipCents,
+    paymentMethod: record.paymentMethod as OrderWithItems['paymentMethod'],
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
     items: record.items.map(toOrderItem),
@@ -284,11 +288,21 @@ export class OrderService {
   }
 
   /** Waiter-role staff: mark an order served, or mark a cash payment paid. Nothing else. */
-  updateWaiterStatus(
+  async updateWaiterStatus(
     tenantId: string,
     orderId: string,
     status: OrderStatusValue,
   ): Promise<OrderWithItems> {
+    if (status === 'paid') {
+      // A waiter can only ever reach "paid" via this endpoint for a cash
+      // settlement — online payments go through PaymentService.verifyPayment
+      // instead, which sets 'online' itself. Tag it here so payment method
+      // is always recorded regardless of which path an order took.
+      await this.prismaService.prisma.order.update({
+        where: { id: orderId },
+        data: { paymentMethod: 'cash' },
+      });
+    }
     return this.updateStatus(tenantId, orderId, status, ['served', 'paid']);
   }
 

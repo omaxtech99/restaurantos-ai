@@ -237,6 +237,8 @@ export interface OrderItem {
   updatedAt: string;
 }
 
+export type OrderPaymentMethod = 'cash' | 'online';
+
 export interface Order {
   id: Uuid;
   tenantId: Uuid;
@@ -244,6 +246,8 @@ export interface Order {
   tableId: Uuid;
   status: OrderStatus;
   totalCents: number;
+  tipCents: number;
+  paymentMethod: OrderPaymentMethod | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -307,4 +311,18 @@ export interface WaitlistEntry {
   cancelledAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CreatePaymentResponse {
+  configured: boolean;
+  razorpayOrderId: string | null;
+  keyId: string | null;
+  amountCents: number;
+  currency: string;
+}
+
+export interface VerifyPaymentRequest {
+  razorpayOrderId: string;
+  razorpayPaymentId: string;
+  razorpaySignature: string;
 }

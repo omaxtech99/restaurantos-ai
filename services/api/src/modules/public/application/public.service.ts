@@ -2,14 +2,17 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import type {
   AddOrderItemsRequest,
   CallWaiterResponse,
+  CreatePaymentResponse,
   OrderWithItems,
   PublicTableContext,
+  VerifyPaymentRequest,
 } from '@restaurantos/types';
 import { PrismaService } from '../../database/prisma.service';
 import { MenuService } from '../../menu/application/menu.service';
 import { OrderService } from '../../order/application/order.service';
 import { RedisService } from '../../redis/redis.service';
 import { EventsGateway } from '../../gateway/presentation/events.gateway';
+import { PaymentService } from '../../payment/application/payment.service';
 
 const WAITER_CALL_COOLDOWN_SECONDS = 300;
 
@@ -21,6 +24,7 @@ export class PublicService {
     private readonly orderService: OrderService,
     private readonly redisService: RedisService,
     private readonly eventsGateway: EventsGateway,
+    private readonly paymentService: PaymentService,
   ) {}
 
   async getTableContext(tableId: string): Promise<PublicTableContext> {
@@ -110,5 +114,13 @@ export class PublicService {
     return {
       nextAvailableAt: new Date(Date.now() + WAITER_CALL_COOLDOWN_SECONDS * 1000).toISOString(),
     };
+  }
+
+  async createPayment(orderId: string, tipCents: number): Promise<CreatePaymentResponse> {
+    return this.paymentService.createPayment(orderId, tipCents);
+  }
+
+  async verifyPayment(orderId: string, input: VerifyPaymentRequest): Promise<OrderWithItems> {
+    return this.paymentService.verifyPayment(orderId, input);
   }
 }

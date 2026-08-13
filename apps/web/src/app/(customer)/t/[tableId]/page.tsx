@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   CallWaiterResponse,
+  CreatePaymentResponse,
   MenuItem,
   OrderStatus,
   OrderWithItems,
@@ -113,6 +114,135 @@ function CallWaiterButton({ tableId }: { tableId: string }) {
           ? 'Calling…'
           : 'Call waiter'}
     </Button>
+  );
+}
+
+interface RazorpayCheckoutResponse {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
+interface RazorpayCheckoutInstance {
+  open: () => void;
+}
+
+interface RazorpayCheckoutOptions {
+  key: string;
+  amount: number;
+  currency: string;
+  order_id: string;
+  name: string;
+  handler: (response: RazorpayCheckoutResponse) => void;
+}
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: RazorpayCheckoutOptions) => RazorpayCheckoutInstance;
+  }
+}
+
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
+const TIP_PERCENT_OPTIONS = [0, 5, 10, 15];
+
+function PayOnlineSection({ orderId, totalCents }: { orderId: string; totalCents: number }) {
+  const queryClient = useQueryClient();
+  const [tipPercent, setTipPercent] = useState(0);
+  const [payError, setPayError] = useState<string | null>(null);
+  const [notConfigured, setNotConfigured] = useState(false);
+
+  const tipCents = Math.round((totalCents * tipPercent) / 100);
+  const totalWithTip = totalCents + tipCents;
+
+  const payMutation = useMutation({
+    mutationFn: async () => {
+      setPayError(null);
+      const payment = await apiRequest<CreatePaymentResponse>(
+        `/public/orders/${orderId}/create-payment`,
+        { method: 'POST', body: JSON.stringify({ tipCents }) },
+      );
+
+      if (!payment.configured || !payment.razorpayOrderId || !payment.keyId) {
+        setNotConfigured(true);
+        return;
+      }
+
+      const loaded = await loadRazorpayScript();
+      if (!loaded || !window.Razorpay) {
+        setPayError('Unable to load the payment form. Please try again.');
+        return;
+      }
+
+      const checkout = new window.Razorpay({
+        key: payment.keyId,
+        amount: payment.amountCents,
+        currency: payment.currency,
+        order_id: payment.razorpayOrderId,
+        name: 'Pay your bill',
+        handler: (response) => {
+          apiRequest(`/public/orders/${orderId}/verify-payment`, {
+            method: 'POST',
+            body: JSON.stringify({
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            }),
+          })
+            .then(() => queryClient.invalidateQueries({ queryKey: ['public-order', orderId] }))
+            .catch(() =>
+              setPayError('Payment was received but we could not confirm it — please check with your waiter.'),
+            );
+        },
+      });
+      checkout.open();
+    },
+    onError: () => setPayError('Unable to start payment. Please try again.'),
+  });
+
+  if (notConfigured) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Online payment isn&apos;t set up yet — please ask your waiter for the bill.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3 border-t pt-3">
+      <div>
+        <p className="text-sm font-medium">Add a tip?</p>
+        <div className="mt-1.5 flex gap-2">
+          {TIP_PERCENT_OPTIONS.map((pct) => (
+            <Button
+              key={pct}
+              type="button"
+              size="sm"
+              variant={tipPercent === pct ? 'default' : 'outline'}
+              onClick={() => setTipPercent(pct)}
+            >
+              {pct === 0 ? 'No tip' : `${pct}%`}
+            </Button>
+          ))}
+        </div>
+      </div>
+      {payError ? <p className="text-sm text-destructive">{payError}</p> : null}
+      <Button className="w-full" disabled={payMutation.isPending} onClick={() => payMutation.mutate()}>
+        {payMutation.isPending ? 'Starting payment…' : `Pay ${formatPrice(totalWithTip)}`}
+      </Button>
+    </div>
   );
 }
 
@@ -264,6 +394,9 @@ export default function TableOrderPage() {
                   </div>
                 ))}
               </div>
+              {order.status === 'served' ? (
+                <PayOnlineSection orderId={order.id} totalCents={order.totalCents} />
+              ) : null}
               {order.status !== 'paid' && order.status !== 'cancelled' ? (
                 <Button
                   variant="outline"

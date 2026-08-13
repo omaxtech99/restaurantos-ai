@@ -373,7 +373,11 @@ export default function OrdersPage() {
               <CardHeader className="flex flex-row items-start justify-between gap-4">
                 <div>
                   <CardTitle>{tableLabelById.get(order.tableId) ?? 'Unknown table'}</CardTitle>
-                  <CardDescription>{formatPrice(order.totalCents)} total</CardDescription>
+                  <CardDescription>
+                    {formatPrice(order.totalCents)} total
+                    {order.tipCents > 0 ? ` + ${formatPrice(order.tipCents)} tip` : ''}
+                    {order.paymentMethod ? ` · paid via ${order.paymentMethod}` : ''}
+                  </CardDescription>
                 </div>
                 <Badge variant={STATUS_BADGE_VARIANT[order.status]}>
                   {STATUS_LABEL[order.status]}

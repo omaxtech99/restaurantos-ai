@@ -36,6 +36,11 @@ enum WaitlistStatus {
   cancelled
 }
 
+enum OrderPaymentMethod {
+  cash
+  online
+}
+
 model Tenant {
   id        String    @id @default(uuid()) @db.Uuid
   name      String
@@ -294,14 +299,18 @@ model Table {
 }
 
 model Order {
-  id         String      @id @default(uuid()) @db.Uuid
-  tenantId   String      @db.Uuid
-  branchId   String      @db.Uuid
-  tableId    String      @db.Uuid
-  status     OrderStatus @default(open)
-  totalCents Int         @default(0)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id                String              @id @default(uuid()) @db.Uuid
+  tenantId          String              @db.Uuid
+  branchId          String              @db.Uuid
+  tableId           String              @db.Uuid
+  status            OrderStatus         @default(open)
+  totalCents        Int                 @default(0)
+  tipCents          Int                 @default(0)
+  paymentMethod     OrderPaymentMethod?
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
 
   tenant Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   branch Branch      @relation(fields: [branchId], references: [id], onDelete: Cascade)

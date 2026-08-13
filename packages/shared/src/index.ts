@@ -139,6 +139,16 @@ export const joinWaitlistSchema = z.object({
   partySize: z.number().int().min(1).max(50),
 });
 
+export const createPaymentSchema = z.object({
+  tipCents: z.number().int().min(0).max(10_000_00).optional(),
+});
+
+export const verifyPaymentSchema = z.object({
+  razorpayOrderId: z.string().min(1),
+  razorpayPaymentId: z.string().min(1),
+  razorpaySignature: z.string().min(1),
+});
+
 export const ORDER_STATUSES = [
   'open',
   'in_kitchen',
