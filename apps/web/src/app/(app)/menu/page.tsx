@@ -36,6 +36,7 @@ import {
 } from '@restaurantos/ui';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { apiRequest, useAuthStore } from '@/lib/api';
+import { DishContentDialog } from './dish-content-dialog';
 
 type CategoryForm = z.infer<typeof createMenuCategorySchema>;
 
@@ -73,6 +74,7 @@ export default function MenuPage() {
 
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [itemDialogCategoryId, setItemDialogCategoryId] = useState<string | null>(null);
+  const [contentDialogItemId, setContentDialogItemId] = useState<string | null>(null);
 
   const categoryForm = useForm<CategoryForm>({
     resolver: zodResolver(createMenuCategorySchema),
@@ -146,6 +148,9 @@ export default function MenuPage() {
   }
 
   const categories = menuQuery.data ?? [];
+  const contentDialogItem = categories
+    .flatMap((category) => category.items)
+    .find((item) => item.id === contentDialogItemId);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.06),_transparent_40%),hsl(var(--background))]">
@@ -330,6 +335,13 @@ export default function MenuPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
+                                onClick={() => setContentDialogItemId(item.id)}
+                              >
+                                Dish content
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
                                 onClick={() =>
                                   toggleAvailability.mutate({
                                     itemId: item.id,
@@ -360,6 +372,10 @@ export default function MenuPage() {
           ))
         )}
       </main>
+
+      {contentDialogItem ? (
+        <DishContentDialog item={contentDialogItem} onClose={() => setContentDialogItemId(null)} />
+      ) : null}
     </div>
   );
 }

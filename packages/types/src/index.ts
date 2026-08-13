@@ -132,6 +132,21 @@ export interface MenuCategory {
   updatedAt: string;
 }
 
+export interface TasteProfile {
+  spicy: number;
+  sweet: number;
+  sour: number;
+  salty: number;
+  umami: number;
+}
+
+export interface NutritionInfo {
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+}
+
 export interface MenuItem {
   id: Uuid;
   tenantId: Uuid;
@@ -141,8 +156,27 @@ export interface MenuItem {
   priceCents: number;
   isAvailable: boolean;
   position: number;
+  tasteProfile: TasteProfile | null;
+  nutritionInfo: NutritionInfo | null;
+  dietaryTags: string[];
+  photoUrl: string | null;
+  videoUrl: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AiSuggestDishResponse {
+  configured: boolean;
+  description: string | null;
+  tasteProfile: TasteProfile | null;
+  nutritionInfo: NutritionInfo | null;
+  dietaryTags: string[];
+}
+
+export interface PresignMediaUploadResponse {
+  configured: boolean;
+  uploadUrl: string | null;
+  publicUrl: string | null;
 }
 
 export interface MenuCategoryWithItems extends MenuCategory {
@@ -164,6 +198,11 @@ export interface CreateMenuItemRequest {
   priceCents: number;
   isAvailable?: boolean;
   position?: number;
+  tasteProfile?: TasteProfile;
+  nutritionInfo?: NutritionInfo;
+  dietaryTags?: string[];
+  photoUrl?: string;
+  videoUrl?: string;
 }
 
 export type UpdateMenuItemRequest = Partial<CreateMenuItemRequest>;

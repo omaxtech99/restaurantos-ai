@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import type { Prisma } from '@restaurantos/database';
 import type {
   CreateMenuCategoryRequest,
   CreateMenuItemRequest,
@@ -9,6 +10,10 @@ import type {
   UpdateMenuItemRequest,
 } from '@restaurantos/types';
 import { PrismaService } from '../../database/prisma.service';
+
+function toJsonInput(value: unknown): Prisma.InputJsonValue | undefined {
+  return value === undefined ? undefined : (value as Prisma.InputJsonValue);
+}
 
 interface CategoryRecord {
   id: string;
@@ -29,6 +34,11 @@ interface ItemRecord {
   priceCents: number;
   isAvailable: boolean;
   position: number;
+  tasteProfile: unknown;
+  nutritionInfo: unknown;
+  dietaryTags: string[];
+  photoUrl: string | null;
+  videoUrl: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -55,6 +65,11 @@ function toMenuItem(record: ItemRecord): MenuItem {
     priceCents: record.priceCents,
     isAvailable: record.isAvailable,
     position: record.position,
+    tasteProfile: (record.tasteProfile as MenuItem['tasteProfile']) ?? null,
+    nutritionInfo: (record.nutritionInfo as MenuItem['nutritionInfo']) ?? null,
+    dietaryTags: record.dietaryTags,
+    photoUrl: record.photoUrl,
+    videoUrl: record.videoUrl,
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
   };
@@ -153,6 +168,11 @@ export class MenuService {
         priceCents: input.priceCents,
         isAvailable: input.isAvailable ?? true,
         position: input.position ?? 0,
+        tasteProfile: toJsonInput(input.tasteProfile),
+        nutritionInfo: toJsonInput(input.nutritionInfo),
+        dietaryTags: input.dietaryTags ?? [],
+        photoUrl: input.photoUrl,
+        videoUrl: input.videoUrl,
       },
     });
 
@@ -179,6 +199,11 @@ export class MenuService {
         priceCents: input.priceCents,
         isAvailable: input.isAvailable,
         position: input.position,
+        tasteProfile: toJsonInput(input.tasteProfile),
+        nutritionInfo: toJsonInput(input.nutritionInfo),
+        dietaryTags: input.dietaryTags,
+        photoUrl: input.photoUrl,
+        videoUrl: input.videoUrl,
       },
     });
 

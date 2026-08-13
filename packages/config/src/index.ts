@@ -21,9 +21,14 @@ export const apiEnvSchema = z.object({
   SMTP_URL: z.string().min(1),
   EMAIL_FROM: z.string().min(1),
   R2_BUCKET: optionalString,
+  R2_ACCOUNT_ID: optionalString,
+  R2_ACCESS_KEY_ID: optionalString,
+  R2_SECRET_ACCESS_KEY: optionalString,
+  R2_PUBLIC_URL: optionalString,
   RAZORPAY_KEY_ID: optionalString,
   RAZORPAY_KEY_SECRET: optionalString,
   OPENAI_API_KEY: optionalString,
+  OPENAI_MODEL: optionalString,
 });
 
 export type ApiEnv = z.infer<typeof apiEnvSchema>;

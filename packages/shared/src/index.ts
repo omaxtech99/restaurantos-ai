@@ -89,6 +89,35 @@ export const createMenuCategorySchema = z.object({
 
 export const updateMenuCategorySchema = createMenuCategorySchema.partial();
 
+export const DIETARY_TAGS = [
+  'vegetarian',
+  'vegan',
+  'jain',
+  'gluten_free',
+  'dairy_free',
+  'nut_free',
+  'halal',
+  'spicy',
+] as const;
+export type DietaryTag = (typeof DIETARY_TAGS)[number];
+
+const tasteScale = z.number().int().min(0).max(5);
+
+export const tasteProfileSchema = z.object({
+  spicy: tasteScale,
+  sweet: tasteScale,
+  sour: tasteScale,
+  salty: tasteScale,
+  umami: tasteScale,
+});
+
+export const nutritionInfoSchema = z.object({
+  calories: z.number().int().min(0).max(5_000),
+  proteinG: z.number().min(0).max(500),
+  carbsG: z.number().min(0).max(500),
+  fatG: z.number().min(0).max(500),
+});
+
 export const createMenuItemSchema = z.object({
   categoryId: z.string().uuid(),
   name: z.string().trim().min(1).max(120),
@@ -96,9 +125,23 @@ export const createMenuItemSchema = z.object({
   priceCents: z.number().int().min(0).max(100_000_00),
   isAvailable: z.boolean().optional(),
   position: z.number().int().min(0).max(100_000).optional(),
+  tasteProfile: tasteProfileSchema.optional(),
+  nutritionInfo: nutritionInfoSchema.optional(),
+  dietaryTags: z.array(z.enum(DIETARY_TAGS)).optional(),
+  photoUrl: z.string().url().optional(),
+  videoUrl: z.string().url().optional(),
 });
 
 export const updateMenuItemSchema = createMenuItemSchema.partial();
+
+export const aiSuggestDishSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+});
+
+export const presignMediaUploadSchema = z.object({
+  kind: z.enum(['photo', 'video']),
+  contentType: z.string().trim().min(1).max(100),
+});
 
 export const createBranchSchema = z.object({
   name: z.string().trim().min(1).max(120),

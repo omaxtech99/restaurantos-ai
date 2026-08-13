@@ -17,9 +17,13 @@ import { PermissionsGuard } from '../../rbac/presentation/permissions.guard';
 import { RequirePermissions } from '../../rbac/presentation/permissions.decorator';
 import type { AuthenticatedRequest } from '../../auth/domain/authenticated-request';
 import { MenuService } from '../application/menu.service';
+import { AiService } from '../../ai/application/ai.service';
+import { MediaService } from '../../media/application/media.service';
 import {
+  AiSuggestDishDto,
   CreateMenuCategoryDto,
   CreateMenuItemDto,
+  PresignMediaUploadDto,
   UpdateMenuCategoryDto,
   UpdateMenuItemDto,
 } from './menu.dto';
@@ -29,7 +33,11 @@ import {
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller({ path: 'menu', version: '1' })
 export class MenuController {
-  constructor(private readonly menuService: MenuService) {}
+  constructor(
+    private readonly menuService: MenuService,
+    private readonly aiService: AiService,
+    private readonly mediaService: MediaService,
+  ) {}
 
   @RequirePermissions(PERMISSIONS.MENU_READ)
   @Get()
@@ -79,5 +87,17 @@ export class MenuController {
   @Delete('items/:id')
   deleteItem(@Param('id', new ParseUUIDPipe()) id: string, @Req() req: AuthenticatedRequest) {
     return this.menuService.deleteItem(req.user!.tenantId, id);
+  }
+
+  @RequirePermissions(PERMISSIONS.MENU_MANAGE)
+  @Post('ai-suggest')
+  aiSuggest(@Body() body: AiSuggestDishDto) {
+    return this.aiService.suggestDishContent(body.name);
+  }
+
+  @RequirePermissions(PERMISSIONS.MENU_MANAGE)
+  @Post('media/presign')
+  presignMedia(@Body() body: PresignMediaUploadDto) {
+    return this.mediaService.presignUpload(body.kind, body.contentType);
   }
 }

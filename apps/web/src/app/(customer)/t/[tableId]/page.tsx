@@ -30,6 +30,7 @@ import {
   Skeleton,
 } from '@restaurantos/ui';
 import { ApiClientError, apiRequest } from '@/lib/api';
+import { DishDetailDialog } from './dish-detail-dialog';
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   open: 'Order received',
@@ -255,6 +256,7 @@ export default function TableOrderPage() {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [cartOpen, setCartOpen] = useState(false);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
+  const [detailItem, setDetailItem] = useState<MenuItem | null>(null);
 
   useEffect(() => {
     const stored = sessionStorage.getItem(sessionKey(tableId));
@@ -439,15 +441,46 @@ export default function TableOrderPage() {
               <div className="space-y-3">
                 {category.items.map((item) => {
                   const quantity = cart[item.id] ?? 0;
+                  const hasRichContent = Boolean(
+                    item.photoUrl || item.videoUrl || item.tasteProfile || item.nutritionInfo,
+                  );
                   return (
                     <Card key={item.id}>
-                      <CardContent className="flex items-start justify-between gap-4 py-4">
-                        <div className="min-w-0">
-                          <p className="font-medium">{item.name}</p>
+                      <CardContent className="flex items-start gap-3 py-4">
+                        {item.photoUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={item.photoUrl}
+                            alt={item.name}
+                            className="h-16 w-16 flex-none rounded-lg border object-cover"
+                          />
+                        ) : null}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-baseline gap-x-2">
+                            <p className="font-medium">{item.name}</p>
+                            {hasRichContent ? (
+                              <button
+                                type="button"
+                                onClick={() => setDetailItem(item)}
+                                className="text-xs text-primary underline underline-offset-2"
+                              >
+                                Details
+                              </button>
+                            ) : null}
+                          </div>
                           {item.description ? (
                             <p className="mt-0.5 text-sm text-muted-foreground">
                               {item.description}
                             </p>
+                          ) : null}
+                          {item.dietaryTags.length > 0 ? (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {item.dietaryTags.map((tag) => (
+                                <Badge key={tag} variant="secondary" className="text-[10px]">
+                                  {tag.replace('_', ' ')}
+                                </Badge>
+                              ))}
+                            </div>
                           ) : null}
                           <p className="mt-1.5 text-sm font-medium">
                             {formatPrice(item.priceCents)}
@@ -564,6 +597,8 @@ export default function TableOrderPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {detailItem ? <DishDetailDialog item={detailItem} onClose={() => setDetailItem(null)} /> : null}
     </div>
   );
 }

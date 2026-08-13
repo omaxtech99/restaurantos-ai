@@ -72,4 +72,46 @@ export class AppConfigService {
   get razorpayConfigured(): boolean {
     return Boolean(this.env.RAZORPAY_KEY_ID && this.env.RAZORPAY_KEY_SECRET);
   }
+
+  get openaiApiKey(): string | undefined {
+    return this.env.OPENAI_API_KEY;
+  }
+
+  get openaiModel(): string {
+    return this.env.OPENAI_MODEL ?? 'gpt-4o-mini';
+  }
+
+  get openaiConfigured(): boolean {
+    return Boolean(this.env.OPENAI_API_KEY);
+  }
+
+  get r2AccountId(): string | undefined {
+    return this.env.R2_ACCOUNT_ID;
+  }
+
+  get r2AccessKeyId(): string | undefined {
+    return this.env.R2_ACCESS_KEY_ID;
+  }
+
+  get r2SecretAccessKey(): string | undefined {
+    return this.env.R2_SECRET_ACCESS_KEY;
+  }
+
+  get r2Bucket(): string | undefined {
+    return this.env.R2_BUCKET;
+  }
+
+  get r2PublicUrl(): string | undefined {
+    return this.env.R2_PUBLIC_URL;
+  }
+
+  get r2Configured(): boolean {
+    return Boolean(
+      this.env.R2_ACCOUNT_ID &&
+        this.env.R2_ACCESS_KEY_ID &&
+        this.env.R2_SECRET_ACCESS_KEY &&
+        this.env.R2_BUCKET &&
+        this.env.R2_PUBLIC_URL,
+    );
+  }
 }
