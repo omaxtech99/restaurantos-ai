@@ -37,6 +37,8 @@ export const notificationEnvSchema = z.object({
   WHATSAPP_ACCESS_TOKEN: optionalString,
   WHATSAPP_PHONE_NUMBER_ID: optionalString,
   WHATSAPP_TEMPLATE_NAME: optionalString,
+  WHATSAPP_TEMPLATE_LANGUAGE: optionalString,
+  WHATSAPP_GRAPH_VERSION: optionalString,
 });
 
 export type NotificationEnv = z.infer<typeof notificationEnvSchema>;

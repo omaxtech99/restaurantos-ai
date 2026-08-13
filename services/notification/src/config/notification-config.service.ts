@@ -37,6 +37,14 @@ export class NotificationConfigService {
     return this.env.WHATSAPP_TEMPLATE_NAME ?? 'hello_world';
   }
 
+  get whatsappTemplateLanguage(): string {
+    return this.env.WHATSAPP_TEMPLATE_LANGUAGE ?? 'en_US';
+  }
+
+  get whatsappGraphVersion(): string {
+    return this.env.WHATSAPP_GRAPH_VERSION ?? 'v20.0';
+  }
+
   get whatsappConfigured(): boolean {
     return Boolean(this.env.WHATSAPP_ACCESS_TOKEN && this.env.WHATSAPP_PHONE_NUMBER_ID);
   }

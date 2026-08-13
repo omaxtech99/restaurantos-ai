@@ -7,15 +7,18 @@ interface WhatsAppJob {
   payload: Record<string, string>;
 }
 
-const GRAPH_API_VERSION = 'v19.0';
-
 /**
  * Meta requires business-initiated WhatsApp messages to use a pre-approved
  * template (free-form text only works inside a 24h customer-initiated
  * session window, which doesn't apply here — the restaurant is the one
- * starting the conversation). The template's approved body-variable count
- * and order must match what's configured in Meta Business Manager; this
- * sends the job payload's values, in insertion order, as those variables.
+ * starting the conversation).
+ *
+ * The currently-approved template ("Welcome") has no body variables yet, so
+ * this sends the template call without a `components` array. The job still
+ * carries a full payload (customerName, restaurantName, branchName — see
+ * WaitlistService.notifyNextInQueue) for when a variable-taking template is
+ * approved: re-add a `components: [{ type: 'body', parameters: [...] }]`
+ * block mapping those values in whatever order the new template expects.
  */
 @Injectable()
 export class WhatsAppTransportService {
@@ -32,7 +35,7 @@ export class WhatsAppTransportService {
       return;
     }
 
-    const url = `https://graph.facebook.com/${GRAPH_API_VERSION}/${this.config.whatsappPhoneNumberId}/messages`;
+    const url = `https://graph.facebook.com/${this.config.whatsappGraphVersion}/${this.config.whatsappPhoneNumberId}/messages`;
 
     const response = await fetch(url, {
       method: 'POST',
@@ -46,13 +49,7 @@ export class WhatsAppTransportService {
         type: 'template',
         template: {
           name: this.config.whatsappTemplateName,
-          language: { code: 'en_US' },
-          components: [
-            {
-              type: 'body',
-              parameters: Object.values(job.payload).map((value) => ({ type: 'text', text: value })),
-            },
-          ],
+          language: { code: this.config.whatsappTemplateLanguage },
         },
       }),
     });
